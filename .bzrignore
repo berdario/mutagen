@@ -35,3 +35,5 @@ tests/test_oggspeex.py.bak
 tests/test_oggtheora.py.bak
 tests/test_oggvorbis.py.bak
 tests/test_optimfrog.py.bak
+mutagen/__pycache__
+tests/__pycache__

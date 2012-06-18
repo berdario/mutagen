@@ -606,7 +606,7 @@ class BitPaddedInt(int):
         return ''.join(map(chr, bytes))
     to_str = staticmethod(as_str)
 
-class BitPaddedLong(long):
+class BitPaddedLong(int):
     def as_str(value, bits=7, bigendian=True, width=4):
         return BitPaddedInt.to_str(value, bits, bigendian, width)
     to_str = staticmethod(as_str)
@@ -1836,7 +1836,6 @@ class ASPI(Frame):
 Frames = dict([(k, v) for (k, v) in list(globals().items())
         if len(k)==4 and isinstance(v, type) and issubclass(v, Frame)])
 """All supported ID3v2 frames, keyed by frame name."""
-del(k); del(v)
 
 # ID3v2.2 frames
 class UFI(UFID): "Unique File Identifier"
