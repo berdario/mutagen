@@ -46,7 +46,7 @@ class TAPEWriter(TestCase):
         tag.save(SAMPLE + ".justtag")
         tag.save(SAMPLE + ".tag_at_start")
         fileobj = open(SAMPLE + ".tag_at_start", "ab")
-        fileobj.write("tag garbage" * 1000)
+        fileobj.write(b"tag garbage" * 1000)
         fileobj.close()
         self.tag = mutagen.apev2.APEv2(SAMPLE + ".new")
 
@@ -134,13 +134,13 @@ class TAPEv2ThenID3v1Writer(TAPEWriter):
     def setUp(self):
         super(TAPEv2ThenID3v1Writer, self).setUp()
         f = open(SAMPLE + ".new", "ab+")
-        f.write("TAG" + "\x00" * 125)
+        f.write(b"TAG" + b"\x00" * 125)
         f.close()
         f = open(BROKEN + ".new", "ab+")
-        f.write("TAG" + "\x00" * 125)
+        f.write(b"TAG" + b"\x00" * 125)
         f.close()
         f = open(SAMPLE + ".justtag", "ab+")
-        f.write("TAG" + "\x00" * 125)
+        f.write(b"TAG" + b"\x00" * 125)
         f.close()
 
     def test_tag_at_start_write(self):
@@ -181,7 +181,7 @@ class TAPEv2(TestCase):
 
     def test_guess_not_utf8(self):
         from mutagen.apev2 import APEBinaryValue
-        self.audio["test"] = "\xa4woo"
+        self.audio["test"] = b"\xa4woo"
         self.failUnless(isinstance(self.audio["test"], APEBinaryValue))
         self.failUnlessEqual(4, len(self.audio["test"]))
 
@@ -248,7 +248,7 @@ class TAPEv2ThenID3v1(TAPEv2):
     def setUp(self):
         super(TAPEv2ThenID3v1, self).setUp()
         f = open(self.filename, "ab+")
-        f.write("TAG" + "\x00" * 125)
+        f.write(b"TAG" + b"\x00" * 125)
         f.close()
         self.audio = APEv2(self.filename)
 
@@ -294,7 +294,7 @@ class TAPETextValue(TestCase):
     def setUp(self):
         self.sample = ["foo", "bar", "baz"]
         self.value = mutagen.apev2.APEValue(
-            "\0".join(self.sample), mutagen.apev2.TEXT)
+            "\0".join(self.sample).encode(), mutagen.apev2.TEXT)
 
     def test_type(self):
         self.failUnless(isinstance(self.value, self.TV))
