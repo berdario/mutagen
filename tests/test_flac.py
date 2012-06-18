@@ -133,7 +133,7 @@ class TCueSheet(TestCase):
         self.failUnlessEqual(self.cs.tracks[0].indexes, [(1, 0)])
     def test_second_track(self):
         self.failUnlessEqual(self.cs.tracks[1].track_number, 2)
-        self.failUnlessEqual(self.cs.tracks[1].start_offset, 44100L)
+        self.failUnlessEqual(self.cs.tracks[1].start_offset, 44100)
         self.failUnlessEqual(self.cs.tracks[1].isrc, '')
         self.failUnlessEqual(self.cs.tracks[1].type, 1)
         self.failUnlessEqual(self.cs.tracks[1].pre_emphasis, True)
@@ -167,8 +167,8 @@ class TPicture(TestCase):
         self.failUnlessEqual(self.p.height, 1)
         self.failUnlessEqual(self.p.depth, 24)
         self.failUnlessEqual(self.p.colors, 0)
-        self.failUnlessEqual(self.p.mime, u'image/png')
-        self.failUnlessEqual(self.p.desc, u'A pixel.')
+        self.failUnlessEqual(self.p.mime, 'image/png')
+        self.failUnlessEqual(self.p.desc, 'A pixel.')
         self.failUnlessEqual(self.p.type, 3)
         self.failUnlessEqual(len(self.p.data), 150)
     def test_eq(self): self.failUnlessEqual(self.p, self.p)
@@ -215,13 +215,13 @@ class TFLAC(TestCase):
         self.failUnlessAlmostEqual(FLAC(self.NEW).info.length, 3.7, 1)
 
     def test_keys(self):
-        self.failUnlessEqual(self.flac.keys(), self.flac.tags.keys())
+        self.failUnlessEqual(list(self.flac.keys()), list(self.flac.tags.keys()))
 
     def test_values(self):
-        self.failUnlessEqual(self.flac.values(), self.flac.tags.values())
+        self.failUnlessEqual(list(self.flac.values()), list(self.flac.tags.values()))
 
     def test_items(self):
-        self.failUnlessEqual(self.flac.items(), self.flac.tags.items())
+        self.failUnlessEqual(list(self.flac.items()), list(self.flac.tags.items()))
 
     def test_vc(self):
         self.failUnlessEqual(self.flac['title'][0], 'Silence')
@@ -240,24 +240,24 @@ class TFLAC(TestCase):
 
     def test_write_changetitle_unicode_value(self):
         f = FLAC(self.NEW)
-        f["title"] = u"A Unicode Title \u2022"
+        f["title"] = "A Unicode Title \u2022"
         f.save()
         f = FLAC(self.NEW)
-        self.failUnlessEqual(f["title"][0], u"A Unicode Title \u2022")
+        self.failUnlessEqual(f["title"][0], "A Unicode Title \u2022")
 
     def test_write_changetitle_unicode_key(self):
         f = FLAC(self.NEW)
-        f[u"title"] = "A New Title"
+        f["title"] = "A New Title"
         f.save()
         f = FLAC(self.NEW)
-        self.failUnlessEqual(f[u"title"][0], "A New Title")
+        self.failUnlessEqual(f["title"][0], "A New Title")
 
     def test_write_changetitle_unicode_key_and_value(self):
         f = FLAC(self.NEW)
-        f[u"title"] = u"A Unicode Title \u2022"
+        f["title"] = "A Unicode Title \u2022"
         f.save()
         f = FLAC(self.NEW)
-        self.failUnlessEqual(f[u"title"][0], u"A Unicode Title \u2022")
+        self.failUnlessEqual(f["title"][0], "A Unicode Title \u2022")
 
     def test_force_grow(self):
         f = FLAC(self.NEW)
@@ -524,4 +524,4 @@ NOTFOUND = os.system("tools/notarealprogram 2> %s" % devnull)
 have_flac = True
 if os.system("flac 2> %s > %s" % (devnull, devnull)) == NOTFOUND:
     have_flac = False
-    print "WARNING: Skipping FLAC reference tests."
+    print("WARNING: Skipping FLAC reference tests.")

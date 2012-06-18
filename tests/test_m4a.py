@@ -1,7 +1,7 @@
 import os
 import shutil
 
-from cStringIO import StringIO
+from io import StringIO
 from tempfile import mkstemp
 from tests import TestCase, add
 
@@ -28,7 +28,7 @@ class TAtom(TestCase):
     def test_render_too_big(self):
         class TooBig(str):
             def __len__(self):
-                return 1L << 32
+                return 1 << 32
         data = TooBig("test")
         try: len(data)
         except OverflowError:
@@ -168,7 +168,7 @@ class TM4A(TestCase):
         self.faad()
 
     def test_save_text(self):
-        self.set_key('\xa9nam', u"Some test name")
+        self.set_key('\xa9nam', "Some test name")
 
     def test_freeform(self):
         self.set_key('----:net.sacredchao.Mutagen:test key', "whee")
@@ -236,7 +236,7 @@ class TM4A(TestCase):
         self.faad()
 
     def test_reads_unknown_text(self):
-        self.set_key("foob", u"A test")
+        self.set_key("foob", "A test")
 
     def test_mime(self):
         self.failUnless("audio/mp4" in self.audio.mime)
@@ -252,7 +252,7 @@ class TM4AHasTags(TM4A):
         self.faad()
 
     def test_shrink(self):
-        map(self.audio.__delitem__, self.audio.keys())
+        list(map(self.audio.__delitem__, list(self.audio.keys())))
         self.audio.save()
         audio = M4A(self.audio.filename)
         self.failIf(self.audio.tags)
@@ -284,4 +284,4 @@ NOTFOUND = os.system("tools/notarealprogram 2> %s" % devnull)
 have_faad = True
 if os.system("faad 2> %s > %s" % (devnull, devnull)) == NOTFOUND:
     have_faad = False
-    print "WARNING: Skipping FAAD reference tests."
+    print("WARNING: Skipping FAAD reference tests.")

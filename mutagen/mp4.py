@@ -121,7 +121,7 @@ class Atom(object):
             if child.name == remaining[0]:
                 return child[remaining[1:]]
         else:
-            raise KeyError, "%r not found" % remaining[0]
+            raise KeyError("%r not found" % remaining[0])
 
     def __repr__(self):
         klass = self.__class__.__name__
@@ -168,13 +168,13 @@ class Atoms(object):
         'names' may be a list of atoms (['moov', 'udta']) or a string
         specifying the complete path ('moov.udta').
         """
-        if isinstance(names, basestring):
+        if isinstance(names, str):
             names = names.split(".")
         for child in self.atoms:
             if child.name == names[0]:
                 return child[names[1:]]
         else:
-            raise KeyError, "%s not found" % names[0]
+            raise KeyError("%s not found" % names[0])
 
     def __repr__(self):
         return "\n".join([repr(child) for child in self.atoms])
@@ -242,7 +242,7 @@ class MP4Tags(DictProxy, Metadata):
 
     def load(self, atoms, fileobj):
         try: ilst = atoms["moov.udta.meta.ilst"]
-        except KeyError, key:
+        except KeyError as key:
             raise MP4MetadataError(key)
         for atom in ilst.children:
             fileobj.seek(atom.offset + 8)
@@ -259,7 +259,7 @@ class MP4Tags(DictProxy, Metadata):
                  "\xa9gen", "gnre", "trkn", "disk",
                  "\xa9day", "cpil", "pgap", "pcst", "tmpo",
                  "\xa9too", "----", "covr", "\xa9lyr"]
-        order = dict(zip(order, range(len(order))))
+        order = dict(list(zip(order, list(range(len(order))))))
         last = len(order)
         # If there's no key-based way to distinguish, order by length.
         # If there's still no way, go by string comparison on the
@@ -271,14 +271,14 @@ class MP4Tags(DictProxy, Metadata):
     def save(self, filename):
         """Save the metadata to the given filename."""
         values = []
-        items = self.items()
+        items = list(self.items())
         items.sort(self.__key_sort)
         for key, value in items:
             info = self.__atoms.get(key[:4], (None, type(self).__render_text))
             try:
                 values.append(info[1](self, key, value, *info[2:]))
-            except (TypeError, ValueError), s:
-                raise MP4MetadataValueError, s, sys.exc_info()[2]
+            except (TypeError, ValueError) as s:
+                raise MP4MetadataValueError(s).with_traceback(sys.exc_info()[2])
         data = Atom.render("ilst", "".join(values))
 
         # Find the old atoms.
@@ -442,7 +442,7 @@ class MP4Tags(DictProxy, Metadata):
         dummy, mean, name = key.split(":", 2)
         mean = struct.pack(">I4sI", len(mean) + 12, "mean", 0) + mean
         name = struct.pack(">I4sI", len(name) + 12, "name", 0) + name
-        if isinstance(value, basestring):
+        if isinstance(value, str):
             value = [value]
         return Atom.render("----", mean + name + "".join([
             struct.pack(">I4s2I", len(data) + 16, "data", 1, 0) + data
@@ -494,7 +494,7 @@ class MP4Tags(DictProxy, Metadata):
             raise MP4MetadataValueError(
                 "tmpo must be a list of 16 bit integers")
 
-        values = map(cdata.to_ushort_be, value)
+        values = list(map(cdata.to_ushort_be, value))
         return self.__render_data(key, 0x15, values)
 
     def __parse_bool(self, atom, data):
@@ -536,10 +536,10 @@ class MP4Tags(DictProxy, Metadata):
         if value:
             self[atom.name] = value
     def __render_text(self, key, value, flags=1):
-        if isinstance(value, basestring):
+        if isinstance(value, str):
             value = [value]
         return self.__render_data(
-            key, flags, map(utf8, value))
+            key, flags, list(map(utf8, value)))
 
     def delete(self, filename):
         self.clear()
@@ -561,13 +561,13 @@ class MP4Tags(DictProxy, Metadata):
 
     def pprint(self):
         values = []
-        for key, value in self.iteritems():
+        for key, value in self.items():
             key = key.decode('latin1')
             if key == "covr":
                 values.append("%s=%s" % (key, ", ".join(
                     ["[%d bytes of data]" % len(data) for data in value])))
             elif isinstance(value, list):
-                values.append("%s=%s" % (key, " / ".join(map(unicode, value))))
+                values.append("%s=%s" % (key, " / ".join(map(str, value))))
             else:
                 values.append("%s=%s" % (key, value))
         return "\n".join(values)
@@ -663,13 +663,13 @@ class MP4(FileType):
         try:
             atoms = Atoms(fileobj)
             try: self.info = MP4Info(atoms, fileobj)
-            except StandardError, err:
-                raise MP4StreamInfoError, err, sys.exc_info()[2]
+            except Exception as err:
+                raise MP4StreamInfoError(err).with_traceback(sys.exc_info()[2])
             try: self.tags = self.MP4Tags(atoms, fileobj)
             except MP4MetadataError:
                 self.tags = None
-            except StandardError, err:
-                raise MP4MetadataError, err, sys.exc_info()[2]
+            except Exception as err:
+                raise MP4MetadataError(err).with_traceback(sys.exc_info()[2])
         finally:
             fileobj.close()
 

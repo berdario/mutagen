@@ -82,7 +82,7 @@ class FileType(mutagen._util.DictMixin):
 
         If the file has no tags at all, a KeyError is raised.
         """
-        if self.tags is None: raise KeyError, key
+        if self.tags is None: raise KeyError(key)
         else: return self.tags[key]
 
     def __setitem__(self, key, value):
@@ -100,7 +100,7 @@ class FileType(mutagen._util.DictMixin):
 
         If the file has no tags at all, a KeyError is raised.
         """
-        if self.tags is None: raise KeyError, key
+        if self.tags is None: raise KeyError(key)
         else: del(self.tags[key])
 
     def keys(self):
@@ -109,7 +109,7 @@ class FileType(mutagen._util.DictMixin):
         If the file has no tags at all, an empty list is returned.
         """
         if self.tags is None: return []
-        else: return self.tags.keys()
+        else: return list(self.tags.keys())
 
     def delete(self, filename=None):
         """Remove tags from a file."""
@@ -210,8 +210,7 @@ def File(filename, options=None, easy=False):
                    for Kind in options]
     finally:
         fileobj.close()
-    results = zip(results, options)
-    results.sort()
+    results = sorted(zip(results, options))
     (score, name), Kind = results[-1]
     if score > 0: return Kind(filename)
     else: return None

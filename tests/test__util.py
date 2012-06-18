@@ -29,12 +29,12 @@ class Tutf8(TestCase):
         self.failUnless(isinstance(value, str))
 
     def test_low_unicode(self):
-        value = utf8(u"1234")
+        value = utf8("1234")
         self.failUnlessEqual(value, "1234")
         self.failUnless(isinstance(value, str))
 
     def test_high_unicode(self):
-        value = utf8(u"\u1234")
+        value = utf8("\u1234")
         self.failUnlessEqual(value, '\xe1\x88\xb4')
         self.failUnless(isinstance(value, str))
 
@@ -58,8 +58,8 @@ class TDictMixin(TestCase):
     def test_has_key_contains(self):
         self.failUnless("foo" in self.fdict)
         self.failIf("bar" in self.fdict)
-        self.failUnless(self.fdict.has_key("foo"))
-        self.failIf(self.fdict.has_key("bar"))
+        self.failUnless("foo" in self.fdict)
+        self.failIf("bar" in self.fdict)
 
     def test_iter(self):
         self.failUnlessEqual(list(iter(self.fdict)), ["foo"])
@@ -72,19 +72,19 @@ class TDictMixin(TestCase):
     def test_keys(self):
         self.failUnlessEqual(list(self.fdict.keys()), list(self.rdict.keys()))
         self.failUnlessEqual(
-            list(self.fdict.iterkeys()), list(self.rdict.iterkeys()))
+            list(self.fdict.keys()), list(self.rdict.keys()))
 
     def test_values(self):
         self.failUnlessEqual(
             list(self.fdict.values()), list(self.rdict.values()))
         self.failUnlessEqual(
-            list(self.fdict.itervalues()), list(self.rdict.itervalues()))
+            list(self.fdict.values()), list(self.rdict.values()))
 
     def test_items(self):
         self.failUnlessEqual(
             list(self.fdict.items()), list(self.rdict.items()))
         self.failUnlessEqual(
-            list(self.fdict.iteritems()), list(self.rdict.iteritems()))
+            list(self.fdict.items()), list(self.rdict.items()))
 
     def test_pop(self):
         self.failUnlessEqual(self.fdict.pop("foo"), self.rdict.pop("foo"))
@@ -291,7 +291,7 @@ class FileHandling(TestCase):
         # This appears to be due to ANSI C limitations in read/write on rb+
         # files. The problematic behavior only showed up in our mmap fallback
         # code for transfers of this or similar sizes. 
-        data = ''.join(map(str, range(12574))) # 51760 bytes
+        data = ''.join(map(str, list(range(12574)))) # 51760 bytes
         o = self.file(data)
         insert_bytes(o, 6106, 79)
         self.failUnless(data[:6106+79] + data[79:] == self.read(o))
@@ -300,7 +300,7 @@ class FileHandling(TestCase):
         # This appears to be due to ANSI C limitations in read/write on rb+
         # files. The problematic behavior only showed up in our mmap fallback
         # code for transfers of this or similar sizes. 
-        data = ''.join(map(str, range(12574))) # 51760 bytes
+        data = ''.join(map(str, list(range(12574)))) # 51760 bytes
         o = self.file(data[:6106+79] + data[79:])
         delete_bytes(o, 6106, 79)
         self.failUnless(data == self.read(o))

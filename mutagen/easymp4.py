@@ -86,11 +86,11 @@ class EasyMP4Tags(DictMixin, Metadata):
         """
 
         def getter(tags, key):
-            return map(unicode, tags[atomid])
+            return list(map(str, tags[atomid]))
 
         def setter(tags, key, value):
             clamp = lambda x: int(min(max(min_value, x), max_value))
-            tags[atomid] = map(clamp, map(int, value))
+            tags[atomid] = list(map(clamp, list(map(int, value))))
 
         def deleter(tags, key):
             del(tags[atomid])
@@ -103,9 +103,9 @@ class EasyMP4Tags(DictMixin, Metadata):
             ret = []
             for (track, total) in tags[atomid]:
                 if total:
-                    ret.append(u"%d/%d" % (track, total))
+                    ret.append("%d/%d" % (track, total))
                 else:
-                    ret.append(unicode(track))
+                    ret.append(str(track))
             return ret
 
         def setter(tags, key, value):
@@ -143,7 +143,7 @@ class EasyMP4Tags(DictMixin, Metadata):
             return [s.decode("utf-8", "replace") for s in tags[atomid]]
 
         def setter(tags, key, value):
-            tags[atomid] = map(utf8, value)
+            tags[atomid] = list(map(utf8, value))
 
         def deleter(tags, key):
             del(tags[atomid])
@@ -161,7 +161,7 @@ class EasyMP4Tags(DictMixin, Metadata):
 
     def __setitem__(self, key, value):
         key = key.lower()
-        if isinstance(value, basestring):
+        if isinstance(value, str):
             value = [value]
         func = dict_match(self.Set, key)
         if func is not None:
@@ -179,7 +179,7 @@ class EasyMP4Tags(DictMixin, Metadata):
 
     def keys(self):
         keys = []
-        for key in self.Get.keys():
+        for key in list(self.Get.keys()):
             if key in self.List:
                 keys.extend(self.List[key](self.__mp4, key))
             elif key in self:
@@ -195,7 +195,7 @@ class EasyMP4Tags(DictMixin, Metadata):
                 strings.append("%s=%s" % (key, value))
         return "\n".join(strings)
 
-for atomid, key in {
+for atomid, key in list({
     '\xa9nam': 'title',
     '\xa9alb': 'album',
     '\xa9ART': 'artist',
@@ -211,10 +211,10 @@ for atomid, key in {
     'soar': 'artistsort',
     'sonm': 'titlesort',
     'soco': 'composersort',
-    }.items():
+    }.items()):
     EasyMP4Tags.RegisterTextKey(key, atomid)
 
-for name, key in {
+for name, key in list({
     'MusicBrainz Artist Id': 'musicbrainz_artistid',
     'MusicBrainz Track Id': 'musicbrainz_trackid',
     'MusicBrainz Album Id': 'musicbrainz_albumid',
@@ -223,18 +223,18 @@ for name, key in {
     'MusicBrainz Album Status': 'musicbrainz_albumstatus',
     'MusicBrainz Album Type': 'musicbrainz_albumtype',
     'MusicBrainz Release Country': 'releasecountry',
-    }.items():
+    }.items()):
     EasyMP4Tags.RegisterFreeformKey(key, name)
 
-for name, key in {
+for name, key in list({
     "tmpo": "bpm",
-    }.items():
+    }.items()):
     EasyMP4Tags.RegisterIntKey(key, name)
 
-for name, key in {
+for name, key in list({
     "trkn": "tracknumber",
     "disk": "discnumber",
-    }.items():
+    }.items()):
     EasyMP4Tags.RegisterIntPairKey(key, name)
 
 class EasyMP4(MP4):

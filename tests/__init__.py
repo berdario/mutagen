@@ -1,4 +1,4 @@
-from __future__ import division
+
 
 import glob
 import os
@@ -50,7 +50,7 @@ class Runner(object):
     def run(self, test):
         suite = unittest.makeSuite(test)
         pref = '%s (%d): ' % (test.__name__, len(suite._tests))
-        print pref + " " * (25 - len(pref)),
+        print(pref + " " * (25 - len(pref)), end=' ')
         result = Result()
         suite(result)
         result.printErrors()
@@ -59,7 +59,7 @@ class Runner(object):
 def unit(run=[], filter_func=None):
     runner = Runner()
     failures = False
-    use_suites = filter(filter_func, suites)
+    use_suites = list(filter(filter_func, suites))
     for test in use_suites:
         if not run or test.__name__ in run:
             failures |= runner.run(test)

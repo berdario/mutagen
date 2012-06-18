@@ -21,7 +21,7 @@ __all__ = ["OggFLAC", "Open", "delete"]
 
 import struct
 
-from cStringIO import StringIO
+from io import StringIO
 
 from mutagen.flac import StreamInfo, VCFLACDict
 from mutagen.ogg import OggPage, OggFileType, error as OggError

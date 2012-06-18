@@ -33,7 +33,7 @@ http://wiki.hydrogenaudio.org/index.php?title=APEv2_specification.
 __all__ = ["APEv2", "APEv2File", "Open", "delete"]
 
 import struct
-from cStringIO import StringIO
+from io import StringIO
 
 def is_valid_apev2_key(key):
     return (2 <= len(key) <= 255 and min(key) >= ' ' and max(key) <= '~' and
@@ -44,11 +44,11 @@ def is_valid_apev2_key(key):
 #  1: Item contains binary information
 #  2: Item is a locator of external stored information [e.g. URL]
 #  3: reserved"
-TEXT, BINARY, EXTERNAL = range(3)
+TEXT, BINARY, EXTERNAL = list(range(3))
 
-HAS_HEADER = 1L << 31
-HAS_NO_FOOTER = 1L << 30
-IS_HEADER  = 1L << 29
+HAS_HEADER = 1 << 31
+HAS_NO_FOOTER = 1 << 30
+IS_HEADER  = 1 << 29
 
 class error(IOError): pass
 class APENoHeaderError(error, ValueError): pass
@@ -199,8 +199,7 @@ class APEv2(DictMixin, Metadata):
 
     def pprint(self):
         """Return tag key=value pairs in a human-readable format."""
-        items = self.items()
-        items.sort()
+        items = sorted(list(self.items()))
         return "\n".join(["%s=%s" % (k, v.pprint()) for k, v in items])
 
     def load(self, filename):
@@ -271,7 +270,7 @@ class APEv2(DictMixin, Metadata):
 
         if not isinstance(value, _APEValue):
             # let's guess at the content if we're not already a value...
-            if isinstance(value, unicode):
+            if isinstance(value, str):
                 # unicode? we've got to be text.
                 value = APEValue(utf8(value), TEXT)
             elif isinstance(value, list):
@@ -289,7 +288,7 @@ class APEv2(DictMixin, Metadata):
         self.__dict[key.lower()] = value
 
     def keys(self):
-        return [self.__casemap.get(key, key) for key in self.__dict.keys()]
+        return [self.__casemap.get(key, key) for key in list(self.__dict.keys())]
 
     def save(self, filename=None):
         """Save changes to a file.
@@ -318,7 +317,7 @@ class APEv2(DictMixin, Metadata):
         # "APE tags items should be sorted ascending by size... This is
         # not a MUST, but STRONGLY recommended. Actually the items should
         # be sorted by importance/byte, but this is not feasible."
-        tags = [v._internal(k) for k, v in self.items()]
+        tags = [v._internal(k) for k, v in list(self.items())]
         tags.sort(lambda a, b: cmp(len(a), len(b)))
         num_tags = len(tags)
         tags = "".join(tags)
@@ -401,20 +400,20 @@ class APETextValue(_APEValue):
     strings (with a null seperating the values), or arrays of strings."""
 
     def __unicode__(self):
-        return unicode(str(self), "utf-8")
+        return str(str(self), "utf-8")
 
     def __iter__(self):
         """Iterate over the strings of the value (not the characters)"""
-        return iter(unicode(self).split("\0"))
+        return iter(str(self).split("\0"))
 
     def __getitem__(self, index):
-        return unicode(self).split("\0")[index]
+        return str(self).split("\0")[index]
 
     def __len__(self):
         return self.value.count("\0") + 1
 
     def __cmp__(self, other):
-        return cmp(unicode(self), other)
+        return cmp(str(self), other)
 
     __hash__ = _APEValue.__hash__
 
@@ -436,7 +435,7 @@ class APEExtValue(_APEValue):
 
     External values are usually URI or IRI strings.
     """
-    def pprint(self): return "[External] %s" % unicode(self)
+    def pprint(self): return "[External] %s" % str(self)
 
 class APEv2File(FileType):
     class _Info(object):

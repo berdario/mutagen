@@ -3,13 +3,13 @@ import shutil
 from unittest import TestCase
 from tests import add
 from mutagen.id3 import ID3, BitPaddedInt, COMR, Frames, Frames_2_2, ID3Warning, ID3JunkFrameError
-from StringIO import StringIO
+from io import StringIO
 import warnings
 warnings.simplefilter('error', ID3Warning)
 
-_22 = ID3(); _22.version = (2,2,0)
-_23 = ID3(); _23.version = (2,3,0)
-_24 = ID3(); _24.version = (2,4,0)
+_22 = ID3(); _22.version = (2, 2, 0)
+_23 = ID3(); _23.version = (2, 3, 0)
+_24 = ID3(); _24.version = (2, 4, 0)
 
 class ID3GetSetDel(TestCase):
     uses_mmap = False
@@ -91,7 +91,7 @@ class ID3Loading(TestCase):
         id3 = ID3()
         id3._ID3__fileobj = open(self.silence, 'rb')
         id3._ID3__load_header()
-        self.assertEquals(id3.version, (2,3,0))
+        self.assertEquals(id3.version, (2, 3, 0))
         self.assertEquals(id3.size, 1314)
 
     def test_header_2_4_invalid_flags(self):
@@ -115,7 +115,7 @@ class ID3Loading(TestCase):
         id3 = ID3()
         id3._ID3__fileobj = StringIO('ID3\x02\x00\x00\x00\x00\x00\x00')
         id3._ID3__load_header()
-        self.assertEquals(id3.version, (2,2,0))
+        self.assertEquals(id3.version, (2, 2, 0))
 
     def test_header_2_1(self):
         id3 = ID3()
@@ -160,16 +160,16 @@ class ID3Loading(TestCase):
 
     def test_unsynch(self):
         id3 = ID3()
-        id3.version = (2,4,0)
+        id3.version = (2, 4, 0)
         id3._ID3__flags = 0x80
         badsync = '\x00\xff\x00ab\x00'
         self.assertEquals(
-            id3._ID3__load_framedata(Frames["TPE2"], 0, badsync), [u"\xffab"])
+            id3._ID3__load_framedata(Frames["TPE2"], 0, badsync), ["\xffab"])
         id3._ID3__flags = 0x00
         self.assertEquals(id3._ID3__load_framedata(
-            Frames["TPE2"], 0x02, badsync), [u"\xffab"])
+            Frames["TPE2"], 0x02, badsync), ["\xffab"])
         tag = id3._ID3__load_framedata(Frames["TPE2"], 0, badsync)
-        self.assertEquals(tag, [u"\xff", u"ab"])
+        self.assertEquals(tag, ["\xff", "ab"])
 
     def test_insane__ID3__fullread(self):
         id3 = ID3()
@@ -194,7 +194,7 @@ class Issue21(TestCase):
         self.failUnless("TALB" in self.id3)
 
     def test_tit2_value(self):
-        self.failUnlessEqual(self.id3["TIT2"].text, [u"Punk To Funk"])
+        self.failUnlessEqual(self.id3["TIT2"].text, ["Punk To Funk"])
 add(Issue21)
 
 class ID3Tags(TestCase):
@@ -205,23 +205,23 @@ class ID3Tags(TestCase):
 
     def test_None(self):
         id3 = ID3(self.silence, known_frames={})
-        self.assertEquals(0, len(id3.keys()))
+        self.assertEquals(0, len(list(id3.keys())))
         self.assertEquals(9, len(id3.unknown_frames))
 
     def test_has_docs(self):
-        for Kind in Frames.values() + Frames_2_2.values():
+        for Kind in list(Frames.values()) + list(Frames_2_2.values()):
             self.failUnless(Kind.__doc__, "%s has no docstring" % Kind)
 
     def test_23(self):
         id3 = ID3(self.silence)
-        self.assertEquals(8, len(id3.keys()))
+        self.assertEquals(8, len(list(id3.keys())))
         self.assertEquals(0, len(id3.unknown_frames))
         self.assertEquals('Quod Libet Test Data', id3['TALB'])
         self.assertEquals('Silence', str(id3['TCON']))
         self.assertEquals('Silence', str(id3['TIT1']))
         self.assertEquals('Silence', str(id3['TIT2']))
         self.assertEquals(3000, +id3['TLEN'])
-        self.assertNotEquals(['piman','jzig'], id3['TPE1'])
+        self.assertNotEquals(['piman', 'jzig'], id3['TPE1'])
         self.assertEquals('02/10', id3['TRCK'])
         self.assertEquals(2, +id3['TRCK'])
         self.assertEquals('2004', id3['TDRC'])
@@ -234,14 +234,14 @@ class ID3Tags(TestCase):
                 else: self[tag.HashKey] = tag
 
         id3 = ID3hack(self.silence)
-        self.assertEquals(8, len(id3.keys()))
+        self.assertEquals(8, len(list(id3.keys())))
         self.assertEquals(0, len(id3.unknown_frames))
         self.assertEquals('Quod Libet Test Data', id3['TALB'])
         self.assertEquals('Silence', str(id3['TCON']))
         self.assertEquals('Silence', str(id3['TIT1']))
         self.assertEquals('Silence', str(id3['TIT2']))
         self.assertEquals(3000, +id3['TLEN'])
-        self.assertEquals(['piman','jzig'], id3['TPE1'])
+        self.assertEquals(['piman', 'jzig'], id3['TPE1'])
         self.assertEquals('02/10', id3['TRCK'])
         self.assertEquals(2, +id3['TRCK'])
         self.assertEquals('2004', id3['TDRC'])
@@ -446,7 +446,7 @@ def TestReadTags():
      dict(encoding=0, year=[1987], month=[12])],
     ['TDRC', '\x001987\x00', '1987', '', dict(encoding=0, year=[1987])],
     ['TDRL', '\x001987\x001988', '1987,1988', '',
-     dict(encoding=0, year=[1987,1988])],
+     dict(encoding=0, year=[1987, 1988])],
     ['TDTG', '\x001987', '1987', '', dict(encoding=0, year=[1987])],
     ['TDLY', '\x001205', '1205', 1205, dict(encoding=0)],
     ['TENC', '\x00a b/c d', 'a b/c d', '', dict(encoding=0)],
@@ -456,7 +456,7 @@ def TestReadTags():
     ['TIPL', '\x02\x00a\x00\x00\x00b', [["a", "b"]], '', dict(encoding=2)],
     ['TIT1', '\x00a/b', 'a/b', '', dict(encoding=0)],
     # TIT2 checks misaligned terminator '\x00\x00' across crosses utf16 chars
-    ['TIT2', '\x01\xff\xfe\x38\x00\x00\x38', u'8\u3800', '', dict(encoding=1)],
+    ['TIT2', '\x01\xff\xfe\x38\x00\x00\x38', '8\u3800', '', dict(encoding=1)],
     ['TIT3', '\x00a/b', 'a/b', '', dict(encoding=0)],
     ['TKEY', '\x00A#m', 'A#m', '', dict(encoding=0)],
     ['TLAN', '\x006241', '6241', '', dict(encoding=0)],
@@ -471,8 +471,8 @@ def TestReadTags():
     ['TORY', '\x001923', '1923', 1923, dict(encoding=0)],
     ['TOWN', '\x00own/lic', 'own/lic', '', dict(encoding=0)],
     ['TPE1', '\x00ab', ['ab'], '', dict(encoding=0)],
-    ['TPE2', '\x00ab\x00cd\x00ef', ['ab','cd','ef'], '', dict(encoding=0)],
-    ['TPE3', '\x00ab\x00cd', ['ab','cd'], '', dict(encoding=0)],
+    ['TPE2', '\x00ab\x00cd\x00ef', ['ab', 'cd', 'ef'], '', dict(encoding=0)],
+    ['TPE3', '\x00ab\x00cd', ['ab', 'cd'], '', dict(encoding=0)],
     ['TPE4', '\x00ab\x00', ['ab'], '', dict(encoding=0)],
     ['TPOS', '\x0008/32', '08/32', 8, dict(encoding=0)],
     ['TPRO', '\x00pro', 'pro', '', dict(encoding=0)],
@@ -492,7 +492,7 @@ def TestReadTags():
     ['TSST', '\x0012345', '12345', '', dict(encoding=0)],
     ['TYER', '\x002004', '2004', 2004, dict(encoding=0)],
 
-    ['TXXX', '\x00usr\x00a/b\x00c', ['a/b','c'], '',
+    ['TXXX', '\x00usr\x00a/b\x00c', ['a/b', 'c'], '',
      dict(encoding=0, desc='usr')],
 
     ['WCOM', 'http://foo', 'http://foo', '', {}],
@@ -506,7 +506,7 @@ def TestReadTags():
 
     ['WXXX', '\x00usr\x00http', 'http', '', dict(encoding=0, desc='usr')],
 
-    ['IPLS', '\x00a\x00A\x00b\x00B\x00', [['a','A'],['b','B']], '',
+    ['IPLS', '\x00a\x00A\x00b\x00B\x00', [['a', 'A'], ['b', 'B']], '',
         dict(encoding=0)],
 
     ['MCDI', '\x01\x02\x03\x04', '\x01\x02\x03\x04', '', {}],
@@ -517,7 +517,7 @@ def TestReadTags():
         dict(desc='T', lang='ENU', encoding=0)],
     # found in a real MP3
     ['COMM', '\x00\x00\xcc\x01\x00     ', '     ', '',
-        dict(desc=u'', lang='\x00\xcc\x01', encoding=0)],
+        dict(desc='', lang='\x00\xcc\x01', encoding=0)],
 
     ['APIC', '\x00-->\x00\x03cover\x00cover.jpg', 'cover.jpg', '',
         dict(mime='-->', type=3, desc='cover', encoding=0)],
@@ -684,7 +684,7 @@ def TestReadTags():
     ['WPB', 'http://zzz', 'http://zzz', '', {}],
     ['WXX', '\x00desc\x00http', 'http', '', dict(encoding=0, desc='desc')],
 
-    ['IPL', '\x00a\x00A\x00b\x00B\x00', [['a','A'],['b','B']], '',
+    ['IPL', '\x00a\x00A\x00b\x00B\x00', [['a', 'A'], ['b', 'B']], '',
         dict(encoding=0)],
     ['MCI', '\x01\x02\x03\x04', '\x01\x02\x03\x04', '', {}],
 
@@ -744,7 +744,7 @@ def TestReadTags():
             self.assertEquals(value, tag)
             if 'encoding' not in info:
                 self.assertRaises(AttributeError, getattr, tag, 'encoding')
-            for attr, value in info.iteritems():
+            for attr, value in info.items():
                 t = tag
                 if not isinstance(value, list):
                     value = [value]
@@ -754,7 +754,7 @@ def TestReadTags():
                         self.failUnlessAlmostEqual(value, getattr(t, attr), 5)
                     else: self.assertEquals(value, getattr(t, attr))
 
-                    if isinstance(intval, (int,long)):
+                    if isinstance(intval, int):
                         self.assertEquals(intval, pos(t))
                     else:
                         self.assertRaises(TypeError, pos, t)
@@ -797,7 +797,7 @@ def TestReadTags():
 
     test_tests = {}
     from mutagen.id3 import Frames, Frames_2_2
-    check = dict.fromkeys(Frames.keys() + Frames_2_2.keys())
+    check = dict.fromkeys(list(Frames.keys()) + list(Frames_2_2.keys()))
     tested_tags = dict.fromkeys([row[0] for row in tests])
     for tag in check:
         def check(self, tag=tag): self.assert_(tag in tested_tags)
@@ -967,16 +967,16 @@ class FrameSanityChecks(TestCase):
 
     def test_MTF(self):
         from mutagen.id3 import TextFrame
-        self.assert_(isinstance(TextFrame(text=['a','b']), TextFrame))
+        self.assert_(isinstance(TextFrame(text=['a', 'b']), TextFrame))
 
     def test_TXXX(self):
         from mutagen.id3 import TXXX
-        self.assert_(isinstance(TXXX(desc='d',text='text'), TXXX))
+        self.assert_(isinstance(TXXX(desc='d', text='text'), TXXX))
 
     def test_22_uses_direct_ints(self):
         data = 'TT1\x00\x00\x83\x00' + ('123456789abcdef' * 16)
         id3 = ID3()
-        id3.version = (2,2,0)
+        id3.version = (2, 2, 0)
         tag = list(id3._ID3__read_frames(data, Frames_2_2))[0]
         self.assertEquals(data[7:7+0x82].decode('latin1'), tag.text[0])
 
@@ -1052,7 +1052,7 @@ class FrameSanityChecks(TestCase):
     def test_22_to_24(self):
         from mutagen.id3 import TT1, TIT1
         id3 = ID3()
-        tt1 = TT1(encoding=0, text=u'whatcha staring at?')
+        tt1 = TT1(encoding=0, text='whatcha staring at?')
         id3.loaded_frame(tt1)
         tit1 = id3['TIT1']
 
@@ -1233,9 +1233,9 @@ class Genres(TestCase):
         self.assertEquals(gen.genres, ["a genre", "another"])
 
     def test_nodoubledecode(self):
-        gen = self.TCON(encoding=1, text=u"(255)genre")
+        gen = self.TCON(encoding=1, text="(255)genre")
         gen.genres = gen.genres
-        self.assertEquals(gen.genres, [u"Unknown", u"genre"])
+        self.assertEquals(gen.genres, ["Unknown", "genre"])
 
 class BrokenDiscarded(TestCase):
     uses_mmap = False
@@ -1301,9 +1301,9 @@ class BrokenButParsed(TestCase):
     def test_lengthone_utf16(self):
         from mutagen.id3 import TPE1
         tpe1 = TPE1.fromData(_24, 0, '\x01\x00')
-        self.assertEquals(u'', tpe1)
+        self.assertEquals('', tpe1)
         tpe1 = TPE1.fromData(_24, 0, '\x01\x00\x00\x00\x00')
-        self.assertEquals([u'', u''], tpe1)
+        self.assertEquals(['', ''], tpe1)
 
     def test_fake_zlib_pedantic(self):
         from mutagen.id3 import TPE1, Frame, ID3BadCompressedData
@@ -1326,7 +1326,7 @@ class BrokenButParsed(TestCase):
         id3 = ID3()
         id3.PEDANTIC = False
         tpe1 = TPE1.fromData(id3, Frame.FLAG24_COMPRESS, '\x03abcdefg')
-        self.assertEquals(u'abcdefg', tpe1)
+        self.assertEquals('abcdefg', tpe1)
 
     def test_ql_0_12_missing_uncompressed_size(self):
         from mutagen.id3 import TPE1
@@ -1486,7 +1486,7 @@ class WriteRoundtrip(TestCase):
         from mutagen.id3 import TIT2
         f = ID3(self.newsilence)
         self.assertEquals(f["TIT2"], "Silence")
-        f["TIT2"].text = [u"The sound of silence."]
+        f["TIT2"].text = ["The sound of silence."]
         f.save()
         id3 = ID3(self.newsilence)
         self.assertEquals(id3["TIT2"], "The sound of silence.")
@@ -1495,7 +1495,7 @@ class WriteRoundtrip(TestCase):
         from mutagen.id3 import TPE1
         f = ID3(self.newsilence)
         self.assertEquals(f["TPE1"], "jzig")
-        f["TPE1"] = TPE1(encoding=0, text=u"jzig\x00piman")
+        f["TPE1"] = TPE1(encoding=0, text="jzig\x00piman")
         f.save()
         id3 = ID3(self.newsilence)
         self.assertEquals(id3["TPE1"], ["jzig", "piman"])
@@ -1605,7 +1605,7 @@ class WriteForEyeD3(TestCase):
         from mutagen.id3 import TIT2
         f = ID3(self.newsilence)
         self.assertEquals(f["TIT2"], "Silence")
-        f["TIT2"].text = [u"The sound of silence."]
+        f["TIT2"].text = ["The sound of silence."]
         f.save()
         id3 = eyeD3.tag.Tag(eyeD3.ID3_V2_4)
         id3.link(self.newsilence)
@@ -1691,8 +1691,8 @@ class TimeStampTextFrame(TestCase):
     from mutagen.id3 import TimeStampTextFrame as Frame
 
     def test_compare_to_unicode(self):
-        frame = self.Frame(encoding=0, text=[u'1987', u'1988'])
-        self.failUnlessEqual(frame, unicode(frame))
+        frame = self.Frame(encoding=0, text=['1987', '1988'])
+        self.failUnlessEqual(frame, str(frame))
 
 class Issue69_BadV1Year(TestCase):
     uses_mmap = False

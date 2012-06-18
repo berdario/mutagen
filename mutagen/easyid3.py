@@ -146,7 +146,7 @@ class EasyID3(DictMixin, Metadata):
                 enc = 0
                 # Store 8859-1 if we can, per MusicBrainz spec.
                 for v in value:
-                    if max(v) > u'\x7f':
+                    if max(v) > '\x7f':
                         enc = 3
                 id3.add(mutagen.id3.TXXX(encoding=enc, text=value, desc=desc))
             else:
@@ -182,7 +182,7 @@ class EasyID3(DictMixin, Metadata):
 
     def __setitem__(self, key, value):
         key = key.lower()
-        if isinstance(value, basestring):
+        if isinstance(value, str):
             value = [value]
         func = dict_match(self.Set, key, self.SetFallback)
         if func is not None:
@@ -200,7 +200,7 @@ class EasyID3(DictMixin, Metadata):
 
     def keys(self):
         keys = []
-        for key in self.Get.keys():
+        for key in list(self.Get.keys()):
             if key in self.List:
                 keys.extend(self.List[key](self.__id3, key))
             elif key in self:
@@ -332,7 +332,7 @@ def gain_get(id3, key):
     except KeyError:
         raise EasyID3KeyError(key)
     else:
-        return [u"%+f dB" % frame.gain]
+        return ["%+f dB" % frame.gain]
 
 def gain_set(id3, key, value):
     if len(value) != 1:
@@ -362,7 +362,7 @@ def peak_get(id3, key):
     except KeyError:
         raise EasyID3KeyError(key)
     else:
-        return [u"%f" % frame.peak]
+        return ["%f" % frame.peak]
 
 def peak_set(id3, key, value):
     if len(value) != 1:
@@ -423,7 +423,7 @@ for frameid, key in {
     "TSOT": "titlesort",
     "TSRC": "isrc",
     "TSST": "discsubtitle",
-    }.iteritems():
+    }.items():
     EasyID3.RegisterTextKey(key, frameid)
 
 EasyID3.RegisterKey("genre", genre_get, genre_set, genre_delete)
@@ -444,20 +444,20 @@ EasyID3.RegisterKey("replaygain_*_peak", peak_get, peak_set, peak_delete)
 # http://bugs.musicbrainz.org/ticket/1383
 # http://musicbrainz.org/doc/MusicBrainzTag
 for desc, key in {
-    u"MusicBrainz Artist Id": "musicbrainz_artistid",
-    u"MusicBrainz Album Id": "musicbrainz_albumid",
-    u"MusicBrainz Album Artist Id": "musicbrainz_albumartistid",
-    u"MusicBrainz TRM Id": "musicbrainz_trmid",
-    u"MusicIP PUID": "musicip_puid",
-    u"MusicMagic Fingerprint": "musicip_fingerprint",
-    u"MusicBrainz Album Status": "musicbrainz_albumstatus",
-    u"MusicBrainz Album Type": "musicbrainz_albumtype",
-    u"MusicBrainz Album Release Country": "releasecountry",
-    u"MusicBrainz Disc Id": "musicbrainz_discid",
-    u"ASIN": "asin",
-    u"ALBUMARTISTSORT": "albumartistsort",
-    u"BARCODE": "barcode",
-    }.iteritems():
+    "MusicBrainz Artist Id": "musicbrainz_artistid",
+    "MusicBrainz Album Id": "musicbrainz_albumid",
+    "MusicBrainz Album Artist Id": "musicbrainz_albumartistid",
+    "MusicBrainz TRM Id": "musicbrainz_trmid",
+    "MusicIP PUID": "musicip_puid",
+    "MusicMagic Fingerprint": "musicip_fingerprint",
+    "MusicBrainz Album Status": "musicbrainz_albumstatus",
+    "MusicBrainz Album Type": "musicbrainz_albumtype",
+    "MusicBrainz Album Release Country": "releasecountry",
+    "MusicBrainz Disc Id": "musicbrainz_discid",
+    "ASIN": "asin",
+    "ALBUMARTISTSORT": "albumartistsort",
+    "BARCODE": "barcode",
+    }.items():
     EasyID3.RegisterTXXXKey(key, desc)
 
 class EasyID3FileType(ID3FileType):

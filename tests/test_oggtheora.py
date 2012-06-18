@@ -3,7 +3,7 @@ import shutil
 import sys
 
 from tempfile import mkstemp
-from cStringIO import StringIO
+from io import StringIO
 
 from mutagen.oggtheora import OggTheora, OggTheoraInfo, delete
 from mutagen.ogg import OggPage

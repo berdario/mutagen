@@ -4,7 +4,7 @@ from tempfile import mkstemp
 
 from mutagen.id3 import ID3, TIT2
 from mutagen.musepack import Musepack, MusepackInfo, MusepackHeaderError
-from cStringIO import StringIO
+from io import StringIO
 from tests import TestCase, add
 
 class TMusepack(TestCase):

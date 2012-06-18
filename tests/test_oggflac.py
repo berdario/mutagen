@@ -3,7 +3,7 @@ import shutil
 import sys
 
 from tempfile import mkstemp
-from cStringIO import StringIO
+from io import StringIO
 
 from mutagen.oggflac import OggFLAC, OggFLACStreamInfo, delete
 from mutagen.ogg import OggPage
@@ -98,4 +98,4 @@ NOTFOUND = os.system("tools/notarealprogram 2> %s" % devnull)
 have_flac = True
 if os.system("flac 2> %s > %s" % (devnull, devnull)) == NOTFOUND:
     have_flac = False
-    print "WARNING: Skipping Ogg FLAC reference tests."
+    print("WARNING: Skipping Ogg FLAC reference tests.")

@@ -2,7 +2,7 @@ import os
 import random
 import shutil
 
-from StringIO import StringIO
+from io import StringIO
 from tests import TestCase, add
 from mutagen.ogg import OggPage, error as OggError
 from tempfile import mkstemp
@@ -127,10 +127,10 @@ class TOggPage(TestCase):
             shutil.copy(os.path.join("tests", "data", "multipagecomment.ogg"),
                         filename)
             fileobj = open(filename, "rb+")
-            OggPage.renumber(fileobj, 1002429366L, 20)
+            OggPage.renumber(fileobj, 1002429366, 20)
             fileobj.close()
             fileobj = open(filename, "rb+")
-            OggPage.renumber(fileobj, 1002429366L, 0)
+            OggPage.renumber(fileobj, 1002429366, 0)
             fileobj.close()
         finally:
             try: os.unlink(filename)
@@ -150,7 +150,7 @@ class TOggPage(TestCase):
         self.failUnlessEqual(pages[1].serial, 2)
         self.failUnlessEqual(pages[1].sequence, 100)
         pages.pop(1)
-        self.failUnlessEqual([page.sequence for page in pages], range(20, 29))
+        self.failUnlessEqual([page.sequence for page in pages], list(range(20, 29)))
 
     def test_to_packets(self):
         self.failUnlessEqual(
@@ -207,13 +207,13 @@ class TOggPage(TestCase):
     def test_random_data_roundtrip(self):
         try: random_file = open("/dev/urandom", "rb")
         except (IOError, OSError):
-            print "WARNING: Random data round trip test disabled."
+            print("WARNING: Random data round trip test disabled.")
             return
         for i in range(10):
             num_packets = random.randrange(2, 100)
             lengths = [random.randrange(10, 10000)
                        for i in range(num_packets)]
-            packets = map(random_file.read, lengths)
+            packets = list(map(random_file.read, lengths))
             self.failUnlessEqual(
                 packets, OggPage.to_packets(OggPage.from_packets(packets)))
 
@@ -255,7 +255,7 @@ class TOggPage(TestCase):
     def test_too_many_packets(self):
         packets = ["1"] * 3000
         pages = OggPage.from_packets(packets)
-        map(OggPage.write, pages)
+        list(map(OggPage.write, pages))
         self.failUnless(len(pages) > 3000/255)
 
     def test_read_max_size(self):
@@ -376,7 +376,7 @@ class TOggFileType(TestCase):
         self.audio["bar"] = ["b"]
         self.audio.save()
         audio = self.Kind(self.filename)
-        self.failUnlessEqual(len(audio.tags.keys()), 2)
+        self.failUnlessEqual(len(list(audio.tags.keys())), 2)
         self.failUnlessEqual(audio["foo"], ["a"])
         self.failUnlessEqual(audio["bar"], ["b"])
         self.scan_file()
@@ -492,8 +492,8 @@ NOTFOUND = os.system("tools/notarealprogram 2> %s" % devnull)
 have_ogginfo = True
 if os.system("ogginfo 2> %s > %s" % (devnull, devnull)) == NOTFOUND:
     have_ogginfo = False
-    print "WARNING: Skipping ogginfo reference tests."
+    print("WARNING: Skipping ogginfo reference tests.")
 have_oggz_validate = True
 if os.system("oggz-validate 2> %s > %s" % (devnull, devnull)) == NOTFOUND:
     have_oggz_validate = False
-    print "WARNING: Skipping oggz-validate reference tests."
+    print("WARNING: Skipping oggz-validate reference tests.")

@@ -19,7 +19,7 @@ class HeaderNotFoundError(error, IOError): pass
 class InvalidMPEGHeader(error, IOError): pass
 
 # Mode values.
-STEREO, JOINTSTEREO, DUALCHANNEL, MONO = range(4)
+STEREO, JOINTSTEREO, DUALCHANNEL, MONO = list(range(4))
 
 class MPEGInfo(object):
     """MPEG audio stream information
@@ -46,11 +46,11 @@ class MPEGInfo(object):
 
     # Map (version, layer) tuples to bitrates.
     __BITRATE = {
-        (1, 1): range(0, 480, 32),
-        (1, 2): [0, 32, 48, 56, 64, 80, 96, 112,128,160,192,224,256,320,384],
-        (1, 3): [0, 32, 40, 48, 56, 64, 80, 96, 112,128,160,192,224,256,320],
-        (2, 1): [0, 32, 48, 56, 64, 80, 96, 112,128,144,160,176,192,224,256],
-        (2, 2): [0,  8, 16, 24, 32, 40, 48,  56, 64, 80, 96,112,128,144,160],
+        (1, 1): list(range(0, 480, 32)),
+        (1, 2): [0, 32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384],
+        (1, 3): [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320],
+        (2, 1): [0, 32, 48, 56, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224, 256],
+        (2, 2): [0,  8, 16, 24, 32, 40, 48,  56, 64, 80, 96, 112, 128, 144, 160],
         }
         
     __BITRATE[(2, 3)] = __BITRATE[(2, 2)]
@@ -95,7 +95,7 @@ class MPEGInfo(object):
         # and 90% through the file.
         for i in [offset, 0.3 * size, 0.6 * size, 0.9 * size]:
             try: self.__try(fileobj, int(i), size - offset)
-            except error, e: pass
+            except error as e: pass
             else: break
         # If we can't find any two consecutive frames, try to find just
         # one frame back at the original offset given.

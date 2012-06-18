@@ -20,7 +20,7 @@ class TEasyMP4(TestCase):
         self.mp4.pprint()
 
     def test_has_key(self):
-        self.failIf(self.mp4.has_key("foo"))
+        self.failIf("foo" in self.mp4)
 
     def test_empty_file(self):
         empty = os.path.join('tests', 'data', 'emptyfile.mp3')
@@ -40,14 +40,14 @@ class TEasyMP4(TestCase):
             self.mp4.save(self.filename)
             mp4 = EasyMP4(self.filename)
             self.failUnlessEqual(mp4[key], ["a test value"])
-            self.failUnlessEqual(mp4.keys(), [key])
+            self.failUnlessEqual(list(mp4.keys()), [key])
 
             # And non-creation setting.
             self.mp4[key] = "a test value"
             self.mp4.save(self.filename)
             mp4 = EasyMP4(self.filename)
             self.failUnlessEqual(mp4[key], ["a test value"])
-            self.failUnlessEqual(mp4.keys(), [key])
+            self.failUnlessEqual(list(mp4.keys()), [key])
 
             del(self.mp4[key])
 
@@ -60,13 +60,13 @@ class TEasyMP4(TestCase):
             self.mp4.save(self.filename)
             mp4 = EasyMP4(self.filename)
             self.failUnlessEqual(mp4.get(key), ["a test", "value"])
-            self.failUnlessEqual(mp4.keys(), [key])
+            self.failUnlessEqual(list(mp4.keys()), [key])
 
             self.mp4[key] = ["a test", "value"]
             self.mp4.save(self.filename)
             mp4 = EasyMP4(self.filename)
             self.failUnlessEqual(mp4.get(key), ["a test", "value"])
-            self.failUnlessEqual(mp4.keys(), [key])
+            self.failUnlessEqual(list(mp4.keys()), [key])
 
             del(self.mp4[key])
 

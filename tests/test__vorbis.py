@@ -20,9 +20,9 @@ class TVComment(TestCase):
 
     def setUp(self):
         self.c = VComment()
-        self.c.append(("artist", u"piman"))
-        self.c.append(("artist", u"mu"))
-        self.c.append(("title", u"more fakes"))
+        self.c.append(("artist", "piman"))
+        self.c.append(("artist", "mu"))
+        self.c.append(("title", "more fakes"))
 
     def test_invalid_init(self):
         self.failUnlessRaises(TypeError, VComment, [])
@@ -44,7 +44,7 @@ class TVComment(TestCase):
         self.failUnless(self.c.validate())
 
     def test_validate_broken_key(self):
-        self.c.append((1, u"valid"))
+        self.c.append((1, "valid"))
         self.failUnlessRaises(ValueError, self.c.validate)
         self.failUnlessRaises(ValueError, self.c.write)
 
@@ -118,22 +118,22 @@ class TVCommentDict(TestCase):
     def setUp(self):
         self.c = self.Kind()
         self.c["artist"] = ["mu", "piman"]
-        self.c["title"] = u"more fakes"
+        self.c["title"] = "more fakes"
 
     def test_correct_len(self):
         self.failUnlessEqual(len(self.c), 3)
 
     def test_keys(self):
-        self.failUnless("artist" in self.c.keys())
-        self.failUnless("title" in self.c.keys())
+        self.failUnless("artist" in list(self.c.keys()))
+        self.failUnless("title" in list(self.c.keys()))
 
     def test_values(self):
-        self.failUnless(["mu", "piman"] in self.c.values())
-        self.failUnless(["more fakes"] in self.c.values())
+        self.failUnless(["mu", "piman"] in list(self.c.values()))
+        self.failUnless(["more fakes"] in list(self.c.values()))
 
     def test_items(self):
-        self.failUnless(("artist", ["mu", "piman"]) in self.c.items())
-        self.failUnless(("title", ["more fakes"]) in self.c.items())
+        self.failUnless(("artist", ["mu", "piman"]) in list(self.c.items()))
+        self.failUnless(("title", ["more fakes"]) in list(self.c.items()))
 
     def test_equal(self):
         self.failUnlessEqual(self.c, self.c)
@@ -182,13 +182,13 @@ class TVCommentDict(TestCase):
 
     def test_case_items_426(self):
         self.c.append(("WOO", "bar"))
-        self.failUnless(("woo", ["bar"]) in self.c.items())
+        self.failUnless(("woo", ["bar"]) in list(self.c.items()))
 
     def test_empty(self):
         self.c = VCommentDict()
-        self.failIf(self.c.keys())
-        self.failIf(self.c.values())
-        self.failIf(self.c.items())
+        self.failIf(list(self.c.keys()))
+        self.failIf(list(self.c.values()))
+        self.failIf(list(self.c.items()))
 
     def test_as_dict(self):
         d = self.c.as_dict()
@@ -198,18 +198,18 @@ class TVCommentDict(TestCase):
         self.failUnlessEqual(d["title"], self.c["title"])
 
     def test_bad_key(self):
-        self.failUnlessRaises(UnicodeError, self.c.get, u"\u1234")
+        self.failUnlessRaises(UnicodeError, self.c.get, "\u1234")
         self.failUnlessRaises(
-            UnicodeError, self.c.__setitem__, u"\u1234", "foo")
+            UnicodeError, self.c.__setitem__, "\u1234", "foo")
         self.failUnlessRaises(
-            UnicodeError, self.c.__delitem__, u"\u1234")
+            UnicodeError, self.c.__delitem__, "\u1234")
 
     def test_duplicate_keys(self):
         self.c = VCommentDict()
         keys = ("key", "Key", "KEY")
         for key in keys:
             self.c.append((key, "value"))
-        self.failUnlessEqual(len(self.c.keys()), 1)
+        self.failUnlessEqual(len(list(self.c.keys())), 1)
         self.failUnlessEqual(len(self.c.as_dict()), 1)
 
 add(TVCommentDict)

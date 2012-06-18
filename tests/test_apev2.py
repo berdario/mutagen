@@ -25,7 +25,7 @@ class Tis_valid_apev2_key(TestCase):
             self.failUnless(is_valid_apev2_key(key))
 
     def test_no(self):
-        for key in ["\x11hi", "ffoo\xFF", u"\u1234", "a", "", "foo" * 100]:
+        for key in ["\x11hi", "ffoo\xFF", "\u1234", "a", "", "foo" * 100]:
             self.failIf(is_valid_apev2_key(key))
 add(Tis_valid_apev2_key)
 
@@ -40,7 +40,7 @@ class TAPEWriter(TestCase):
         self.values = {"artist": "Joe Wreschnig\0unittest",
                        "album": "Mutagen tests",
                        "title": "Not really a song"}
-        for k, v in self.values.items():
+        for k, v in list(self.values.items()):
             tag[k] = v
         tag.save(SAMPLE + ".new")
         tag.save(SAMPLE + ".justtag")
@@ -66,7 +66,7 @@ class TAPEWriter(TestCase):
             os.path.getsize(OLD), os.path.getsize(BROKEN+".new"))
 
     def test_readback(self):
-        for k, v in self.tag.items():
+        for k, v in list(self.tag.items()):
             self.failUnlessEqual(str(v), self.values[k])
 
     def test_size(self):
@@ -117,8 +117,8 @@ class TAPEWriter(TestCase):
         tag["FoObaR"] = "Quux"
         tag.save()
         tag = mutagen.apev2.APEv2(SAMPLE + ".new")
-        self.failUnless("FoObaR" in tag.keys())
-        self.failIf("foobar" in tag.keys())
+        self.failUnless("FoObaR" in list(tag.keys()))
+        self.failIf("foobar" in list(tag.keys()))
 
     def tearDown(self):
         os.unlink(SAMPLE + ".new")
@@ -159,17 +159,17 @@ class TAPEv2(TestCase):
 
     def test_invalid_key(self):
         self.failUnlessRaises(
-            KeyError, self.audio.__setitem__, u"\u1234", "foo")
+            KeyError, self.audio.__setitem__, "\u1234", "foo")
 
     def test_guess_text(self):
         from mutagen.apev2 import APETextValue
-        self.audio["test"] = u"foobar"
+        self.audio["test"] = "foobar"
         self.failUnlessEqual(self.audio["test"], "foobar")
         self.failUnless(isinstance(self.audio["test"], APETextValue))
 
     def test_guess_text_list(self):
         from mutagen.apev2 import APETextValue
-        self.audio["test"] = [u"foobar", "quuxbarz"]
+        self.audio["test"] = ["foobar", "quuxbarz"]
         self.failUnlessEqual(self.audio["test"], "foobar\x00quuxbarz")
         self.failUnless(isinstance(self.audio["test"], APETextValue))
 
@@ -206,11 +206,11 @@ class TAPEv2(TestCase):
         self.failUnless("artisT" in self.audio)
 
     def test_keys(self):
-        self.failUnless("Track" in self.audio.keys())
-        self.failUnless("AnArtist" in self.audio.values())
+        self.failUnless("Track" in list(self.audio.keys()))
+        self.failUnless("AnArtist" in list(self.audio.values()))
 
         self.failUnlessEqual(
-            self.audio.items(), zip(self.audio.keys(), self.audio.values()))
+            list(self.audio.items()), list(zip(list(self.audio.keys()), list(self.audio.values()))))
 
     def test_dictlike(self):
         self.failUnless(self.audio.get("track"))
@@ -274,7 +274,7 @@ class TAPEBinaryValue(TestCase):
 
     def setUp(self):
         self.sample = "\x12\x45\xde"
-        self.value = mutagen.apev2.APEValue(self.sample,mutagen.apev2.BINARY)
+        self.value = mutagen.apev2.APEValue(self.sample, mutagen.apev2.BINARY)
 
     def test_type(self):
         self.failUnless(isinstance(self.value, self.BV))

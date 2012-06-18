@@ -25,7 +25,7 @@ work on metadata over 4GB.
 import struct
 import sys
 
-from cStringIO import StringIO
+from io import StringIO
 
 from mutagen import FileType, Metadata
 from mutagen._constants import GENRES
@@ -119,7 +119,7 @@ class Atom(object):
             if child.name == remaining[0]:
                 return child[remaining[1:]]
         else:
-            raise KeyError, "%r not found" % remaining[0]
+            raise KeyError("%r not found" % remaining[0])
 
     def __repr__(self):
         klass = self.__class__.__name__
@@ -166,13 +166,13 @@ class Atoms(object):
         'names' may be a list of atoms (['moov', 'udta']) or a string
         specifying the complete path ('moov.udta').
         """
-        if isinstance(names, basestring):
+        if isinstance(names, str):
             names = names.split(".")
         for child in self.atoms:
             if child.name == names[0]:
                 return child[names[1:]]
         else:
-            raise KeyError, "%s not found" % names[0]
+            raise KeyError("%s not found" % names[0])
 
     def __repr__(self):
         return "\n".join([repr(child) for child in self.atoms])
@@ -202,7 +202,7 @@ class M4ATags(DictProxy, Metadata):
 
     def load(self, atoms, fileobj):
         try: ilst = atoms["moov.udta.meta.ilst"]
-        except KeyError, key:
+        except KeyError as key:
             raise M4AMetadataError(key)
         for atom in ilst.children:
             fileobj.seek(atom.offset + 8)
@@ -219,7 +219,7 @@ class M4ATags(DictProxy, Metadata):
                  "\xa9gen", "gnre", "trkn", "disk",
                  "\xa9day", "cpil", "tmpo", "\xa9too",
                  "----", "covr", "\xa9lyr"]
-        order = dict(zip(order, range(len(order))))
+        order = dict(list(zip(order, list(range(len(order))))))
         last = len(order)
         # If there's no key-based way to distinguish, order by length.
         # If there's still no way, go by string comparison on the
@@ -231,7 +231,7 @@ class M4ATags(DictProxy, Metadata):
     def save(self, filename):
         """Save the metadata to the given filename."""
         values = []
-        items = self.items()
+        items = list(self.items())
         items.sort(self.__key_sort)
         for key, value in items:
             render = self.__atoms.get(
@@ -413,7 +413,7 @@ class M4ATags(DictProxy, Metadata):
 
     def pprint(self):
         values = []
-        for key, value in self.iteritems():
+        for key, value in self.items():
             key = key.decode('latin1')
             try: values.append("%s=%s" % (key, value))
             except UnicodeDecodeError:
@@ -477,13 +477,13 @@ class M4A(FileType):
         try:
             atoms = Atoms(fileobj)
             try: self.info = M4AInfo(atoms, fileobj)
-            except StandardError, err:
-                raise M4AStreamInfoError, err, sys.exc_info()[2]
+            except Exception as err:
+                raise M4AStreamInfoError(err).with_traceback(sys.exc_info()[2])
             try: self.tags = M4ATags(atoms, fileobj)
             except M4AMetadataError:
                 self.tags = None
-            except StandardError, err:
-                raise M4AMetadataError, err, sys.exc_info()[2]
+            except Exception as err:
+                raise M4AMetadataError(err).with_traceback(sys.exc_info()[2])
         finally:
             fileobj.close()
 

@@ -2,7 +2,7 @@ import os
 import shutil
 import sys
 
-from cStringIO import StringIO
+from io import StringIO
 from mutagen.ogg import OggPage
 from mutagen.oggvorbis import OggVorbis, OggVorbisInfo, delete
 from tests import TestCase, add
@@ -98,7 +98,7 @@ class TOggVorbis(TOggFileType):
         self.scan_file()
         if ogg is None: return
         vfc = ogg.vorbis.VorbisFile(self.filename).comment()
-        self.failUnlessEqual(vfc.keys(), ["VENDOR"])
+        self.failUnlessEqual(list(vfc.keys()), ["VENDOR"])
 
     def test_vorbiscomment_delete_readd(self):
         self.audio.delete()
@@ -109,8 +109,8 @@ class TOggVorbis(TOggFileType):
         if ogg is None: return
         vfc = ogg.vorbis.VorbisFile(self.filename).comment()
         self.failUnlessEqual(self.audio["foobar"], vfc["foobar"])
-        self.failUnless("FOOBAR" in vfc.keys())
-        self.failUnless("VENDOR" in vfc.keys())
+        self.failUnless("FOOBAR" in list(vfc.keys()))
+        self.failUnless("VENDOR" in list(vfc.keys()))
 
     def test_huge_tag(self):
         vorbis = self.Kind(
@@ -166,7 +166,7 @@ class TOggVorbis(TOggFileType):
 
 try: import ogg.vorbis
 except ImportError:
-    print "WARNING: Skipping Ogg Vorbis reference tests."
+    print("WARNING: Skipping Ogg Vorbis reference tests.")
     ogg = None
 
 add(TOggVorbis)

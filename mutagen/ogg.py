@@ -20,7 +20,7 @@ import struct
 import sys
 import zlib
 
-from cStringIO import StringIO
+from io import StringIO
 
 from mutagen import FileType
 from mutagen._util import cdata, insert_bytes, delete_bytes
@@ -57,7 +57,7 @@ class OggPage(object):
 
     version = 0
     __type_flags = 0
-    position = 0L
+    position = 0
     serial = 0
     sequence = 0
     offset = None
@@ -103,8 +103,8 @@ class OggPage(object):
             lacings.append(total)
             self.complete = False
 
-        self.packets = map(fileobj.read, lacings)
-        if map(len, self.packets) != lacings:
+        self.packets = list(map(fileobj.read, lacings))
+        if list(map(len, self.packets)) != lacings:
             raise error("unable to read full data")
 
     def __eq__(self, other):
@@ -303,7 +303,7 @@ class OggPage(object):
                     if page.packets[-1]:
                         page.complete = False
                         if len(page.packets) == 1:
-                            page.position = -1L
+                            page.position = -1
                     else:
                         page.packets.pop(-1)
                     pages.append(page)
@@ -336,7 +336,7 @@ class OggPage(object):
 
         # Number the new pages starting from the first old page.
         first = old_pages[0].sequence
-        for page, seq in zip(new_pages, range(first, first + len(new_pages))):
+        for page, seq in zip(new_pages, list(range(first, first + len(new_pages)))):
             page.sequence = seq
             page.serial = old_pages[0].serial
 
@@ -348,7 +348,7 @@ class OggPage(object):
         new_pages[-1].last = old_pages[-1].last
         new_pages[-1].complete = old_pages[-1].complete
         if not new_pages[-1].complete and len(new_pages[-1].packets) == 1:
-            new_pages[-1].position = -1L
+            new_pages[-1].position = -1
 
         new_data = "".join(map(klass.write, new_pages))
 
@@ -456,10 +456,10 @@ class OggFileType(FileType):
                     denom = self.info.fps
                 self.info.length = samples / float(denom)
 
-            except error, e:
-                raise self._Error, e, sys.exc_info()[2]
+            except error as e:
+                raise self._Error(e).with_traceback(sys.exc_info()[2])
             except EOFError:
-                raise self._Error, "no appropriate stream found"
+                raise self._Error("no appropriate stream found")
         finally:
             fileobj.close()
 
@@ -475,10 +475,10 @@ class OggFileType(FileType):
         fileobj = open(filename, "rb+")
         try:
             try: self.tags._inject(fileobj)
-            except error, e:
-                raise self._Error, e, sys.exc_info()[2]
+            except error as e:
+                raise self._Error(e).with_traceback(sys.exc_info()[2])
             except EOFError:
-                raise self._Error, "no appropriate stream found"
+                raise self._Error("no appropriate stream found")
         finally:
             fileobj.close()
 
@@ -492,9 +492,9 @@ class OggFileType(FileType):
         fileobj = open(filename, "rb+")
         try:
             try: self.tags._inject(fileobj)
-            except error, e:
-                raise self._Error, e, sys.exc_info()[2]
+            except error as e:
+                raise self._Error(e).with_traceback(sys.exc_info()[2])
             except EOFError:
-                raise self._Error, "no appropriate stream found"
+                raise self._Error("no appropriate stream found")
         finally:
             fileobj.close()

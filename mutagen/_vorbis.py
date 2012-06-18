@@ -16,7 +16,7 @@ The specification is at http://www.xiph.org/vorbis/doc/v-comment.html.
 
 import sys
 
-from cStringIO import StringIO
+from io import StringIO
 
 import mutagen
 from mutagen._util import DictMixin, cdata
@@ -54,7 +54,7 @@ class VComment(mutagen.Metadata, list):
     vendor -- the stream 'vendor' (i.e. writer); default 'Mutagen'
     """
 
-    vendor = u"Mutagen " + mutagen.version_string
+    vendor = "Mutagen " + mutagen.version_string
 
     def __init__(self, data=None, *args, **kwargs):
         # Collect the args to pass to load, this lets child classes
@@ -90,16 +90,16 @@ class VComment(mutagen.Metadata, list):
                 except (OverflowError, MemoryError):
                     raise error("cannot read %d bytes, too large" % length)
                 try: tag, value = string.split('=', 1)
-                except ValueError, err:
+                except ValueError as err:
                     if errors == "ignore":
                         continue
                     elif errors == "replace":
-                        tag, value = u"unknown%d" % i, string
+                        tag, value = "unknown%d" % i, string
                     else:
-                        raise VorbisEncodingError, str(err), sys.exc_info()[2]
+                        raise VorbisEncodingError(str(err)).with_traceback(sys.exc_info()[2])
                 try: tag = tag.encode('ascii', errors)
                 except UnicodeEncodeError:
-                    raise VorbisEncodingError, "invalid tag name %r" % tag
+                    raise VorbisEncodingError("invalid tag name %r" % tag)
                 else:
                     if is_valid_key(tag): self.append((tag, value))
             if framing and not ord(fileobj.read(1)) & 0x01:
@@ -115,7 +115,7 @@ class VComment(mutagen.Metadata, list):
         any invalid keys or values are found, a ValueError is raised.
         """
 
-        if not isinstance(self.vendor, unicode):
+        if not isinstance(self.vendor, str):
             try: self.vendor.decode('utf-8')
             except UnicodeDecodeError: raise ValueError
 
@@ -123,7 +123,7 @@ class VComment(mutagen.Metadata, list):
             try:
                 if not is_valid_key(key): raise ValueError
             except: raise ValueError("%r is not a valid key" % key)
-            if not isinstance(value, unicode):
+            if not isinstance(value, str):
                 try: value.encode("utf-8")
                 except: raise ValueError("%r is not a valid value" % value)
         else: return True
@@ -181,15 +181,15 @@ class VCommentDict(VComment, DictMixin):
         """
         key = key.lower().encode('ascii')
         values = [value for (k, value) in self if k.lower() == key]
-        if not values: raise KeyError, key
+        if not values: raise KeyError(key)
         else: return values
 
     def __delitem__(self, key):
         """Delete all values associated with the key."""
         key = key.lower().encode('ascii')
-        to_delete = filter(lambda x: x[0].lower() == key, self)
-        if not to_delete:raise KeyError, key
-        else: map(self.remove, to_delete)
+        to_delete = [x for x in self if x[0].lower() == key]
+        if not to_delete:raise KeyError(key)
+        else: list(map(self.remove, to_delete))
 
     def __contains__(self, key):
         """Return true if the key has any values."""
@@ -216,8 +216,8 @@ class VCommentDict(VComment, DictMixin):
 
     def keys(self):
         """Return all keys in the comment."""
-        return self and list(set([k.lower() for k, v in self]))
+        return self and list({k.lower() for k, v in self})
 
     def as_dict(self):
         """Return a copy of the comment data in a real dict."""
-        return dict([(key, self[key]) for key in self.keys()])
+        return dict([(key, self[key]) for key in list(self.keys())])

@@ -32,7 +32,7 @@ class DictMixin(object):
     """
 
     def __iter__(self):
-        return iter(self.keys())
+        return iter(list(self.keys()))
 
     def has_key(self, key):
         try: self[key]
@@ -40,18 +40,18 @@ class DictMixin(object):
         else: return True
     __contains__ = has_key
 
-    iterkeys = lambda self: iter(self.keys())
+    iterkeys = lambda self: iter(list(self.keys()))
 
     def values(self):
-        return map(self.__getitem__, self.keys())
-    itervalues = lambda self: iter(self.values())
+        return list(map(self.__getitem__, list(self.keys())))
+    itervalues = lambda self: iter(list(self.values()))
 
     def items(self):
-        return zip(self.keys(), self.values())
-    iteritems = lambda s: iter(s.items())
+        return list(zip(list(self.keys()), list(self.values())))
+    iteritems = lambda s: iter(list(s.items()))
 
     def clear(self):
-        map(self.__delitem__, self.keys())
+        list(map(self.__delitem__, list(self.keys())))
 
     def pop(self, key, *args):
         if len(args) > 1:
@@ -65,7 +65,7 @@ class DictMixin(object):
 
     def popitem(self):
         try:
-            key = self.keys()[0]
+            key = list(self.keys())[0]
             return key, self.pop(key)
         except IndexError: raise KeyError("dictionary is empty")
 
@@ -74,7 +74,7 @@ class DictMixin(object):
             self.update(kwargs)
             other = {}
 
-        try: map(self.__setitem__, other.keys(), other.values())
+        try: list(map(self.__setitem__, list(other.keys()), list(other.values())))
         except AttributeError:
             for key, value in other:
                 self[key] = value
@@ -90,16 +90,16 @@ class DictMixin(object):
         except KeyError: return default
 
     def __repr__(self):
-        return repr(dict(self.items()))
+        return repr(dict(list(self.items())))
 
     def __cmp__(self, other):
         if other is None: return 1
-        else: return cmp(dict(self.items()), other)
+        else: return cmp(dict(list(self.items())), other)
 
     __hash__ = object.__hash__
 
     def __len__(self):
-        return len(self.keys())
+        return len(list(self.keys()))
 
 class DictProxy(DictMixin):
     def __init__(self, *args, **kwargs):
@@ -116,7 +116,7 @@ class DictProxy(DictMixin):
         del(self.__dict[key])
 
     def keys(self):
-        return self.__dict.keys()
+        return list(self.__dict.keys())
 
 class cdata(object):
     """C character buffer to Python numeric type conversions."""
@@ -302,7 +302,7 @@ def utf8(data):
     """Convert a basestring to a valid UTF-8 str."""
     if isinstance(data, str):
         return data.decode("utf-8", "replace").encode("utf-8")
-    elif isinstance(data, unicode):
+    elif isinstance(data, str):
         return data.encode("utf-8")
     else: raise TypeError("only unicode/str types can be converted to UTF-8")
 
@@ -310,7 +310,7 @@ def dict_match(d, key, default=None):
     try:
         return d[key]
     except KeyError:
-        for pattern, value in d.iteritems():
+        for pattern, value in d.items():
             if fnmatchcase(key, pattern):
                 return value
     return default

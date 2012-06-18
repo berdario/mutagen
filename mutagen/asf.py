@@ -49,14 +49,14 @@ class ASFTags(list, DictMixin, Metadata):
 
         """
         values = [value for (k, value) in self if k == key]
-        if not values: raise KeyError, key
+        if not values: raise KeyError(key)
         else: return values
 
     def __delitem__(self, key):
         """Delete all values associated with the key."""
-        to_delete = filter(lambda x: x[0] == key, self)
-        if not to_delete: raise KeyError, key
-        else: map(self.remove, to_delete)
+        to_delete = [x for x in self if x[0] == key]
+        if not to_delete: raise KeyError(key)
+        else: list(map(self.remove, to_delete))
 
     def __contains__(self, key):
         """Return true if the key has any values."""
@@ -78,15 +78,15 @@ class ASFTags(list, DictMixin, Metadata):
         except KeyError: pass
         for value in values:
             if key in _standard_attribute_names:
-                value = unicode(value)
+                value = str(value)
             elif not isinstance(value, ASFBaseAttribute):
-                if isinstance(value, basestring):
+                if isinstance(value, str):
                     value = ASFUnicodeAttribute(value)
                 elif isinstance(value, bool):
                     value = ASFBoolAttribute(value)
                 elif isinstance(value, int):
                     value = ASFDWordAttribute(value)
-                elif isinstance(value, long):
+                elif isinstance(value, int):
                     value = ASFQWordAttribute(value)
             self.append((key, value))
 
@@ -168,7 +168,7 @@ class ASFUnicodeAttribute(ASFBaseAttribute):
         return self.value
 
     def __cmp__(self, other):
-        return cmp(unicode(self), other)
+        return cmp(str(self), other)
 
     __hash__ = ASFBaseAttribute.__hash__
 
@@ -332,7 +332,7 @@ WORD = ASFWordAttribute.TYPE
 GUID = ASFGUIDAttribute.TYPE
 
 def ASFValue(value, kind, **kwargs):
-    for t, c in _attribute_types.items():
+    for t, c in list(_attribute_types.items()):
         if kind == t:
             return c(value=value, **kwargs)
     raise ValueError("Unknown value type")
@@ -400,12 +400,12 @@ class ContentDescriptionObject(BaseObject):
                 texts.append(None)
             pos = end
         title, author, copyright, desc, rating = texts
-        for key, value in dict(
+        for key, value in list(dict(
             Title=title,
             Author=author,
             Copyright=copyright,
             Description=desc,
-            Rating=rating).items():
+            Rating=rating).items()):
             if value is not None:
                 asf.tags[key] = value
 
@@ -416,8 +416,8 @@ class ContentDescriptionObject(BaseObject):
                 return value[0].encode("utf-16-le") + "\x00\x00"
             else:
                 return ""
-        texts = map(render_text, _standard_attribute_names)
-        data = struct.pack("<HHHHH", *map(len, texts)) + "".join(texts)
+        texts = list(map(render_text, _standard_attribute_names))
+        data = struct.pack("<HHHHH", *list(map(len, texts))) + "".join(texts)
         return self.GUID + struct.pack("<Q", 24 + len(data)) + data
 
 
@@ -443,7 +443,7 @@ class ExtendedContentDescriptionObject(BaseObject):
             asf.tags.append((name, attr))
 
     def render(self, asf):
-        attrs = asf.to_extended_content_description.items()
+        attrs = list(asf.to_extended_content_description.items())
         data = "".join([attr.render(name) for (name, attr) in attrs])
         data = struct.pack("<QH", 26 + len(data), len(attrs)) + data
         return self.GUID + data
@@ -523,7 +523,7 @@ class MetadataObject(BaseObject):
             asf.tags.append((name, attr))
 
     def render(self, asf):
-        attrs = asf.to_metadata.items()
+        attrs = list(asf.to_metadata.items())
         data = "".join([attr.render_m(name) for (name, attr) in attrs])
         return (self.GUID + struct.pack("<QH", 26 + len(data), len(attrs)) +
                 data)
@@ -654,7 +654,7 @@ class ASF(FileType):
     def __read_file(self, fileobj):
         header = fileobj.read(30)
         if len(header) != 30 or header[:16] != HeaderObject.GUID:
-            raise ASFHeaderError, "Not an ASF file."
+            raise ASFHeaderError("Not an ASF file.")
 
         self.extended_content_description_obj = None
         self.content_description_obj = None

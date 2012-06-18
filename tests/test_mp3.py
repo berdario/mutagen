@@ -2,7 +2,7 @@ import os
 import shutil
 
 from unittest import TestCase
-from cStringIO import StringIO
+from io import StringIO
 from tests import add
 from mutagen.mp3 import MP3, error as MP3Error, delete, MPEGInfo, EasyMP3
 from mutagen.id3 import ID3

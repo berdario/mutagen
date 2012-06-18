@@ -1,5 +1,5 @@
 import os
-from StringIO import StringIO
+from io import StringIO
 
 from tests import TestCase, add
 from mutagen import File, Metadata, FileType
@@ -68,7 +68,7 @@ class TFile(TestCase):
     def test_bad(self):
         try: self.failUnless(File(devnull) is None)
         except (OSError, IOError):
-            print "WARNING: Unable to open %s." % devnull
+            print("WARNING: Unable to open %s." % devnull)
         self.failUnless(File(__file__) is None)
 
     def test_empty(self):
@@ -198,6 +198,6 @@ class TMutagen(TestCase):
                 self.failIf(
                     version[-1] >= 0, "mutagen.version is not a prerelease.")
         else:
-            print "WARNING: Unable to check version correctness."
-            print "WARNING: %r does not exist." % definitely_trunk
+            print("WARNING: Unable to check version correctness.")
+            print("WARNING: %r does not exist." % definitely_trunk)
 add(TMutagen)

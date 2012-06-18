@@ -51,7 +51,7 @@ class release(Command):
             self.spawn(
                 ["svn", "commit", "-m", "Mutagen %s." % sversion, target])
             os.chdir(target)
-            print "Building release tarball."
+            print("Building release tarball.")
             self.spawn(["./setup.py", "sdist"])
             self.spawn(["./setup.py", "register"])
 
@@ -70,8 +70,8 @@ class clean(distutils_clean):
         for pathname, dirs, files in os.walk(os.path.dirname(__file__)):
             for filename in filter(should_remove, files):
                 try: os.unlink(os.path.join(pathname, filename))
-                except EnvironmentError, err:
-                    print str(err)
+                except EnvironmentError as err:
+                    print(str(err))
 
         try: os.unlink("MANIFEST")
         except OSError: pass
@@ -109,7 +109,7 @@ class test_cmd(Command):
     def run(self):
         import mmap
 
-        print "Running tests with real mmap."
+        print("Running tests with real mmap.")
         self.__test()
 
         if self.quick:
@@ -120,13 +120,13 @@ class test_cmd(Command):
 
         try: import fcntl
         except ImportError:
-            print "Unable to run mocked fcntl.lockf tests."
+            print("Unable to run mocked fcntl.lockf tests.")
         else:
             def MockLockF(*args, **kwargs):
                 raise IOError
             lockf = fcntl.lockf
             fcntl.lockf = MockLockF
-            print "Running tests with mocked failing fcntl.lockf."
+            print("Running tests with mocked failing fcntl.lockf.")
             self.__test(uses_mmap)
             fcntl.lockf = lockf
 
@@ -134,21 +134,21 @@ class test_cmd(Command):
             def __init__(self, *args, **kwargs): pass
             def move(self, dest, src, count): raise ValueError
             def close(self): pass
-        print "Running tests with mocked failing mmap.move."
+        print("Running tests with mocked failing mmap.move.")
         mmap.mmap = MockMMap
         self.__test(uses_mmap)
 
         def MockMMap2(*args, **kwargs):
             raise EnvironmentError
         mmap.mmap = MockMMap2
-        print "Running tests with mocked failing mmap.mmap."
+        print("Running tests with mocked failing mmap.mmap.")
         self.__test(uses_mmap)
 
     def __test(self, filter=None):
         import tests
         if tests.unit(self.to_run, filter):
             if sys.version[:3] == (2, 4, 2):
-                print "You're running Python 2.4.2, which has known mmap bugs."
+                print("You're running Python 2.4.2, which has known mmap bugs.")
             raise SystemExit("Test failures are listed above.")
 
 class coverage_cmd(Command):
@@ -176,7 +176,7 @@ class coverage_cmd(Command):
         results = tracer.results()
         coverage = os.path.join(os.path.dirname(__file__), "coverage")
         results.write_results(show_missing=True, coverdir=coverage)
-        map(os.unlink, glob.glob(os.path.join(coverage, "[!m]*.cover")))
+        list(map(os.unlink, glob.glob(os.path.join(coverage, "[!m]*.cover"))))
         try: os.unlink(os.path.join(coverage, "..setup.cover"))
         except OSError: pass
 
@@ -190,8 +190,8 @@ class coverage_cmd(Command):
                  (line.startswith(">>>>>>") and
                   "finally:" not in line and '"""' not in line)])
         pct = 100.0 * (total_lines - bad_lines) / float(total_lines)
-        print "Coverage data written to", coverage, "(%d/%d, %0.2f%%)" % (
-            total_lines - bad_lines, total_lines, pct)
+        print("Coverage data written to", coverage, "(%d/%d, %0.2f%%)" % (
+            total_lines - bad_lines, total_lines, pct))
         if pct < 98.66:
             raise SystemExit("Coverage percentage went down; write more tests.")
         if pct > 98.7:

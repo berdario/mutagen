@@ -22,8 +22,8 @@ http://flac.sourceforge.net/format.html
 __all__ = ["FLAC", "Open", "delete"]
 
 import struct
-from cStringIO import StringIO
-from _vorbis import VCommentDict
+from io import StringIO
+from ._vorbis import VCommentDict
 from mutagen import FileType
 from mutagen._util import insert_bytes
 from mutagen.id3 import BitPaddedInt
@@ -38,7 +38,7 @@ class FLACVorbisError(ValueError, error): pass
 def to_int_be(string):
     """Convert an arbitrarily-long string to a long using big-endian
     byte order."""
-    return reduce(lambda a, b: (a << 8) + ord(b), string, 0L)
+    return reduce(lambda a, b: (a << 8) + ord(b), string, 0)
 
 class MetadataBlock(object):
     """A generic block of FLAC metadata.
@@ -82,8 +82,8 @@ class MetadataBlock(object):
 
         The overall size of the rendered blocks does not change, so
         this adds several bytes of padding for each merged block."""
-        paddings = filter(lambda x: isinstance(x, Padding), blocks)
-        map(blocks.remove, paddings)
+        paddings = [x for x in blocks if isinstance(x, Padding)]
+        list(map(blocks.remove, paddings))
         padding = Padding()
         # total padding size is the sum of padding sizes plus 4 bytes
         # per removed header.
@@ -141,7 +141,7 @@ class StreamInfo(MetadataBlock):
         bps_tail = bps_total >> 36
         bps_head = (sample_channels_bps & 1) << 4
         self.bits_per_sample = int(bps_head + bps_tail + 1)
-        self.total_samples = bps_total & 0xFFFFFFFFFL
+        self.total_samples = bps_total & 0xFFFFFFFFF
         self.length = self.total_samples / float(self.sample_rate)
 
         self.md5_signature = to_int_be(data.read(16))
@@ -165,12 +165,12 @@ class StreamInfo(MetadataBlock):
         byte += (self.total_samples >> 32) & 0xF
         f.write(chr(byte))
         # last 32 of sample count
-        f.write(struct.pack(">I", self.total_samples & 0xFFFFFFFFL))
+        f.write(struct.pack(">I", self.total_samples & 0xFFFFFFFF))
         # MD5 signature
         sig = self.md5_signature
         f.write(struct.pack(
-            ">4I", (sig >> 96) & 0xFFFFFFFFL, (sig >> 64) & 0xFFFFFFFFL,
-            (sig >> 32) & 0xFFFFFFFFL, sig & 0xFFFFFFFFL))
+            ">4I", (sig >> 96) & 0xFFFFFFFF, (sig >> 64) & 0xFFFFFFFF,
+            (sig >> 32) & 0xFFFFFFFF, sig & 0xFFFFFFFF))
         return f.getvalue()
 
     def pprint(self):
@@ -432,8 +432,8 @@ class Picture(MetadataBlock):
 
     def __init__(self, data=None):
         self.type = 0
-        self.mime = u''
-        self.desc = u''
+        self.mime = ''
+        self.desc = ''
         self.width = 0
         self.height = 0
         self.depth = 0
@@ -623,11 +623,10 @@ class FLAC(FileType):
 
     def clear_pictures(self):
         """Delete all pictures from the file."""
-        self.metadata_blocks = filter(lambda b: b.code != Picture.code,
-                                      self.metadata_blocks)
+        self.metadata_blocks = [b for b in self.metadata_blocks if b.code != Picture.code]
 
     def __get_pictures(self):
-        return filter(lambda b: b.code == Picture.code, self.metadata_blocks)
+        return [b for b in self.metadata_blocks if b.code == Picture.code]
     pictures = property(__get_pictures, doc="List of embedded pictures")
 
     def save(self, filename=None, deleteid3=False):

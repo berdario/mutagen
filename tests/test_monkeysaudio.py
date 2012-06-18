@@ -1,7 +1,7 @@
 import os
 
 from mutagen.monkeysaudio import MonkeysAudio, MonkeysAudioHeaderError
-from cStringIO import StringIO
+from io import StringIO
 from tests import TestCase, add
 
 class TMonkeysAudio(TestCase):

@@ -2,7 +2,7 @@ import os
 import shutil
 import struct
 
-from cStringIO import StringIO
+from io import StringIO
 from tempfile import mkstemp
 from tests import TestCase, add
 from mutagen.mp4 import MP4, Atom, Atoms, MP4Tags, MP4Info, \
@@ -27,7 +27,7 @@ class TAtom(TestCase):
     def test_render_too_big(self):
         class TooBig(str):
             def __len__(self):
-                return 1L << 32
+                return 1 << 32
         data = TooBig("test")
         try: len(data)
         except OverflowError:
@@ -170,11 +170,11 @@ class TMP4Tags(TestCase):
              "\x00\x00\x00*purl\x00\x00\x00\"data\x00\x00\x00\x00\x00\x00"
              "\x00\x00http://foo/bar.xml")
         self.failUnlessEqual(
-             MP4Tags()._MP4Tags__render_text('aART', [u'\u0041lbum Artist']),
+             MP4Tags()._MP4Tags__render_text('aART', ['\u0041lbum Artist']),
              "\x00\x00\x00$aART\x00\x00\x00\x1cdata\x00\x00\x00\x01\x00\x00"
              "\x00\x00\x41lbum Artist")
         self.failUnlessEqual(
-             MP4Tags()._MP4Tags__render_text('aART', [u'Album Artist', u'Whee']),
+             MP4Tags()._MP4Tags__render_text('aART', ['Album Artist', 'Whee']),
              "\x00\x00\x008aART\x00\x00\x00\x1cdata\x00\x00\x00\x01\x00\x00"
              "\x00\x00Album Artist\x00\x00\x00\x14data\x00\x00\x00\x01\x00"
              "\x00\x00\x00Whee")
@@ -253,17 +253,17 @@ class TMP4(TestCase):
         self.failUnlessAlmostEqual(3.7, self.audio.info.length, 1)
 
     def test_padding(self):
-        self.audio["\xa9nam"] = u"wheeee" * 10
+        self.audio["\xa9nam"] = "wheeee" * 10
         self.audio.save()
         size1 = os.path.getsize(self.audio.filename)
         audio = MP4(self.audio.filename)
-        self.audio["\xa9nam"] = u"wheeee" * 11
+        self.audio["\xa9nam"] = "wheeee" * 11
         self.audio.save()
         size2 = os.path.getsize(self.audio.filename)
         self.failUnless(size1, size2)
 
     def test_padding_2(self):
-        self.audio["\xa9nam"] = u"wheeee" * 10
+        self.audio["\xa9nam"] = "wheeee" * 10
         self.audio.save()
         # Reorder "free" and "ilst" atoms
         fileobj = open(self.audio.filename, "rb+")
@@ -288,7 +288,7 @@ class TMP4(TestCase):
         self.failUnlessEqual(free.offset + free.length, ilst.offset)
         fileobj.close()
         # Save the file
-        self.audio["\xa9nam"] = u"wheeee" * 11
+        self.audio["\xa9nam"] = "wheeee" * 11
         self.audio.save()
         # Check the order of "free" and "ilst" atoms
         fileobj = open(self.audio.filename, "rb+")
@@ -311,13 +311,13 @@ class TMP4(TestCase):
 
     def test_unicode(self):
         self.set_key('\xa9nam', ['\xe3\x82\x8a\xe3\x81\x8b'],
-                     result=[u'\u308a\u304b'])
+                     result=['\u308a\u304b'])
 
     def test_save_text(self):
-        self.set_key('\xa9nam', [u"Some test name"])
+        self.set_key('\xa9nam', ["Some test name"])
 
     def test_save_texts(self):
-        self.set_key('\xa9nam', [u"Some test name", u"One more name"])
+        self.set_key('\xa9nam', ["Some test name", "One more name"])
 
     def test_freeform(self):
         self.set_key('----:net.sacredchao.Mutagen:test key', ["whee"])
@@ -424,7 +424,7 @@ class TMP4(TestCase):
         self.faad()
 
     def test_reads_unknown_text(self):
-        self.set_key("foob", [u"A test"])
+        self.set_key("foob", ["A test"])
 
     def __read_offsets(self, filename):
         fileobj = open(filename, 'rb')
@@ -482,7 +482,7 @@ class TMP4HasTags(TMP4):
         self.faad()
 
     def test_shrink(self):
-        map(self.audio.__delitem__, self.audio.keys())
+        list(map(self.audio.__delitem__, list(self.audio.keys())))
         self.audio.save()
         audio = MP4(self.audio.filename)
         self.failIf(self.audio.tags)
@@ -591,4 +591,4 @@ NOTFOUND = os.system("tools/notarealprogram 2> %s" % devnull)
 have_faad = True
 if os.system("faad 2> %s > %s" % (devnull, devnull)) == NOTFOUND:
     have_faad = False
-    print "WARNING: Skipping FAAD reference tests."
+    print("WARNING: Skipping FAAD reference tests.")

@@ -2,7 +2,7 @@ import os
 import shutil
 import sys
 
-from cStringIO import StringIO
+from io import StringIO
 from mutagen.ogg import OggPage
 from mutagen.oggspeex import OggSpeex, OggSpeexInfo, delete
 from tests import TestCase, add

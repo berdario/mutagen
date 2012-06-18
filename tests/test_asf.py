@@ -20,8 +20,7 @@ add(TASFFile)
 try: sorted
 except NameError:
     def sorted(l):
-        n = list(l)
-        n.sort()
+        n = sorted(l)
         return n
 
 class TASFInfo(TestCase):
@@ -76,8 +75,8 @@ class TASF(TestCase):
         self.audio = ASF(self.audio.filename)
         self.failUnless(key in self.audio)
         self.failUnless(key in self.audio.tags)
-        self.failUnless(key in self.audio.tags.keys())
-        self.failUnless(key in self.audio.tags.as_dict().keys())
+        self.failUnless(key in list(self.audio.tags.keys()))
+        self.failUnless(key in list(self.audio.tags.as_dict().keys()))
         newvalue = self.audio[key]
         if isinstance(newvalue, list):
             for a, b in zip(sorted(newvalue), sorted(result or value)):
@@ -86,43 +85,43 @@ class TASF(TestCase):
             self.failUnlessEqual(audio[key], result or value)
 
     def test_auto_unicode(self):
-        self.set_key(u"WM/AlbumTitle", u"foo",
-                     [ASFValue(u"foo", UNICODE)])
+        self.set_key("WM/AlbumTitle", "foo",
+                     [ASFValue("foo", UNICODE)])
 
     def test_auto_unicode_list(self):
-        self.set_key(u"WM/AlbumTitle", [u"foo", u"bar"],
-                     [ASFValue(u"foo", UNICODE), ASFValue(u"bar", UNICODE)])
+        self.set_key("WM/AlbumTitle", ["foo", "bar"],
+                     [ASFValue("foo", UNICODE), ASFValue("bar", UNICODE)])
 
     def test_auto_word(self):
-        self.set_key(u"WM/Track", 12,
+        self.set_key("WM/Track", 12,
                      [ASFValue(12, DWORD)])
 
     def test_auto_word_list(self):
-        self.set_key(u"WM/Track", [12, 13],
+        self.set_key("WM/Track", [12, 13],
                      [ASFValue(12, WORD), ASFValue(13, WORD)])
 
     def test_auto_dword(self):
-        self.set_key(u"WM/Track", 12,
+        self.set_key("WM/Track", 12,
                      [ASFValue(12, DWORD)])
 
     def test_auto_dword_list(self):
-        self.set_key(u"WM/Track", [12, 13],
+        self.set_key("WM/Track", [12, 13],
                      [ASFValue(12, DWORD), ASFValue(13, DWORD)])
 
     def test_auto_qword(self):
-        self.set_key(u"WM/Track", 12L,
+        self.set_key("WM/Track", 12,
                      [ASFValue(12, QWORD)])
 
     def test_auto_qword_list(self):
-        self.set_key(u"WM/Track", [12L, 13L],
+        self.set_key("WM/Track", [12, 13],
                      [ASFValue(12, QWORD), ASFValue(13, QWORD)])
 
     def test_auto_bool(self):
-        self.set_key(u"IsVBR", True,
+        self.set_key("IsVBR", True,
                      [ASFValue(True, BOOL)])
 
     def test_auto_bool_list(self):
-        self.set_key(u"IsVBR", [True, False],
+        self.set_key("IsVBR", [True, False],
                      [ASFValue(True, BOOL), ASFValue(False, BOOL)])
 
     def test_basic_tags(self):
