@@ -31,8 +31,13 @@ def is_valid_key(key):
     Valid Vorbis comment keys are printable ASCII between 0x20 (space)
     and 0x7D ('}'), excluding '='.
     """
+    if isinstance(key, str):
+        try:
+            key = key.encode('ascii')
+        except UnicodeEncodeError:
+            return False
     for c in key:
-        if c < " " or c > "}" or c == "=": return False
+        if c < ord(" ") or c > ord("}") or c == ord("="): return False
     else: return bool(key)
 istag = is_valid_key
 
