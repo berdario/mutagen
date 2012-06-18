@@ -16,7 +16,7 @@ The specification is at http://www.xiph.org/vorbis/doc/v-comment.html.
 
 import sys
 
-from io import StringIO
+from io import BytesIO
 
 import mutagen
 from mutagen._util import DictMixin, cdata
@@ -62,7 +62,9 @@ class VComment(mutagen.Metadata, list):
         # constructor.
         if data is not None:
             if isinstance(data, str):
-                data = StringIO(data)
+                data = BytesIO(data.encode())
+            elif isinstance(data, bytes):
+                data = BytesIO(data)
             elif not hasattr(data, 'read'):
                 raise TypeError("VComment requires string data or a file-like")
             self.load(data, *args, **kwargs)
@@ -144,7 +146,7 @@ class VComment(mutagen.Metadata, list):
 
         self.validate()
 
-        f = StringIO()
+        f = BytesIO()
         f.write(cdata.to_uint_le(len(self.vendor.encode('utf-8'))))
         f.write(self.vendor.encode('utf-8'))
         f.write(cdata.to_uint_le(len(self)))
