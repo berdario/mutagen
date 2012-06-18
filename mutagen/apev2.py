@@ -33,7 +33,8 @@ http://wiki.hydrogenaudio.org/index.php?title=APEv2_specification.
 __all__ = ["APEv2", "APEv2File", "Open", "delete"]
 
 import struct
-from io import StringIO
+from io import BytesIO
+from functools import total_ordering
 
 def is_valid_apev2_key(key):
     return (2 <= len(key) <= 255 and min(key) >= ' ' and max(key) <= '~' and
@@ -78,8 +79,8 @@ class _APEv2Data(object):
 
     def __init__(self, fileobj):
         self.__find_metadata(fileobj)
-        self.metadata = max(self.header, self.footer)
-        if self.metadata is None: return
+        if self.header is None and self.footer is None: return
+        self.metadata = max(filter(lambda x: x is not None, (self.header, self.footer)))
         self.__fill_missing(fileobj)
         self.__fix_brokenness(fileobj)
         if self.data is not None:
@@ -94,7 +95,7 @@ class _APEv2Data(object):
         except IOError:
             fileobj.seek(0, 2)
             return
-        if fileobj.read(8) == "APETAGEX":
+        if fileobj.read(8) == b"APETAGEX":
             fileobj.seek(-8, 1)
             self.footer = self.metadata = fileobj.tell()
             return
@@ -102,10 +103,10 @@ class _APEv2Data(object):
         # Check for an APEv2 tag followed by an ID3v1 tag at the end.
         try:
             fileobj.seek(-128, 2)
-            if fileobj.read(3) == "TAG":
+            if fileobj.read(3) == b"TAG":
 
                 fileobj.seek(-35, 1) # "TAG" + header length
-                if fileobj.read(8) == "APETAGEX":
+                if fileobj.read(8) == b"APETAGEX":
                     fileobj.seek(-8, 1)
                     self.footer = fileobj.tell()
                     return
@@ -114,14 +115,14 @@ class _APEv2Data(object):
                 # (http://www.id3.org/lyrics3200.html)
                 # (header length - "APETAGEX") - "LYRICS200"
                 fileobj.seek(15, 1)
-                if fileobj.read(9) == 'LYRICS200':
+                if fileobj.read(9) == b'LYRICS200':
                     fileobj.seek(-15, 1) # "LYRICS200" + size tag
                     try: offset = int(fileobj.read(6))
                     except ValueError:
                         raise IOError
 
                     fileobj.seek(-32 - offset - 6, 1)
-                    if fileobj.read(8) == "APETAGEX":
+                    if fileobj.read(8) == b"APETAGEX":
                         fileobj.seek(-8, 1)
                         self.footer = fileobj.tell()
                         return
@@ -131,7 +132,7 @@ class _APEv2Data(object):
 
         # Check for a tag at the start.
         fileobj.seek(0, 0)
-        if fileobj.read(8) == "APETAGEX":
+        if fileobj.read(8) == b"APETAGEX":
             self.is_at_start = True
             self.header = 0
 
@@ -148,7 +149,7 @@ class _APEv2Data(object):
             # offset + the size, which includes the footer.
             self.end = self.data + self.size
             fileobj.seek(self.end - 32, 0)
-            if fileobj.read(8) == "APETAGEX":
+            if fileobj.read(8) == b"APETAGEX":
                 self.footer = self.end - 32
         elif self.footer is not None:
             self.end = self.footer + 32
@@ -172,7 +173,7 @@ class _APEv2Data(object):
             except IOError:
                 break
             else:
-                if fileobj.read(8) == "APETAGEX":
+                if fileobj.read(8) == b"APETAGEX":
                     fileobj.seek(-8, 1)
                     start = fileobj.tell()
                 else: break
@@ -218,7 +219,7 @@ class APEv2(DictMixin, Metadata):
             raise APENoHeaderError("No APE tag found")
 
     def __parse_tag(self, tag, count):
-        fileobj = StringIO(tag)
+        fileobj = BytesIO(tag)
 
         for i in range(count):
             size = cdata.uint_le(fileobj.read(4))
@@ -230,13 +231,13 @@ class APEv2(DictMixin, Metadata):
             if kind == 3:
                 raise APEBadItemError("value type must be 0, 1, or 2")
             key = value = fileobj.read(1)
-            while key[-1:] != '\x00' and value:
+            while key[-1:] != b'\x00' and value:
                 value = fileobj.read(1)
                 key += value
-            if key[-1:] == "\x00":
+            if key[-1:] == b"\x00":
                 key = key[:-1]
             value = fileobj.read(size)
-            self[key] = APEValue(value, kind)
+            self[key.decode()] = APEValue(value, kind)
 
     def __getitem__(self, key):
         if not is_valid_apev2_key(key):
@@ -275,7 +276,7 @@ class APEv2(DictMixin, Metadata):
                 value = APEValue(utf8(value), TEXT)
             elif isinstance(value, list):
                 # list? text.
-                value = APEValue("\0".join(map(utf8, value)), TEXT)
+                value = APEValue(b"\0".join(map(utf8, value)), TEXT)
             else:
                 try: dummy = value.decode("utf-8")
                 except UnicodeError:
@@ -283,7 +284,7 @@ class APEv2(DictMixin, Metadata):
                     value = APEValue(value, BINARY)
                 else:
                     # valid UTF8, probably text
-                    value = APEValue(value, TEXT)
+                    value = APEValue(utf8(value), TEXT)
         self.__casemap[key.lower()] = key
         self.__dict[key.lower()] = value
 
@@ -317,25 +318,20 @@ class APEv2(DictMixin, Metadata):
         # "APE tags items should be sorted ascending by size... This is
         # not a MUST, but STRONGLY recommended. Actually the items should
         # be sorted by importance/byte, but this is not feasible."
-        tags = [v._internal(k) for k, v in list(self.items())]
-        tags.sort(lambda a, b: cmp(len(a), len(b)))
+        tags = sorted((v._internal(k) for k, v in list(self.items())), key=len)
         num_tags = len(tags)
-        tags = "".join(tags)
+        tags = b"".join(tags)
 
-        header = "APETAGEX%s%s" %(
-            # version, tag size, item count, flags
-            struct.pack("<4I", 2000, len(tags) + 32, num_tags,
-                        HAS_HEADER | IS_HEADER),
-            "\0" * 8)
+        # tag string, version, tag size, item count, flags
+        header = struct.pack("<8s 4I 8x", b"APETAGEX", 2000, len(tags)+32,
+                             num_tags, HAS_HEADER|IS_HEADER)
         fileobj.write(header)
 
         fileobj.write(tags)
 
-        footer = "APETAGEX%s%s" %(
-            # version, tag size, item count, flags
-            struct.pack("<4I", 2000, len(tags) + 32, num_tags,
-                        HAS_HEADER),
-            "\0" * 8)
+        # tag string, version, tag size, item count, flags
+        footer = struct.pack("<8s 4I 8x", b"APETAGEX", 2000, len(tags) + 32,
+                             num_tags, HAS_HEADER)
         fileobj.write(footer)
         fileobj.close()
 
@@ -386,21 +382,23 @@ class _APEValue(object):
     # 1B: Null
     # Key value
     def _internal(self, key):
-        return "%s%s\0%s" %(
-            struct.pack("<2I", len(self.value), self.kind << 1),
-            key, self.value)
+        if isinstance(key, str):
+            key = key.encode()
+        return struct.pack("<2I", len(self.value), self.kind << 1) + \
+            key + b"\0" + self.value
 
     def __repr__(self):
         return "%s(%r, %d)" % (type(self).__name__, self.value, self.kind)
 
+@total_ordering
 class APETextValue(_APEValue):
     """An APEv2 text value.
 
     Text values are Unicode/UTF-8 strings. They can be accessed like
     strings (with a null seperating the values), or arrays of strings."""
 
-    def __unicode__(self):
-        return str(str(self), "utf-8")
+    def __str__(self):
+        return self.value.decode()
 
     def __iter__(self):
         """Iterate over the strings of the value (not the characters)"""
@@ -410,17 +408,20 @@ class APETextValue(_APEValue):
         return str(self).split("\0")[index]
 
     def __len__(self):
-        return self.value.count("\0") + 1
+        return self.value.count(b"\0") + 1
 
-    def __cmp__(self, other):
-        return cmp(str(self), other)
+    def __eq__(self, other):
+        return str(self) == other
+        
+    def __lt__(self, other):
+        return str(self) < other
 
     __hash__ = _APEValue.__hash__
 
     def __setitem__(self, index, value):
         values = list(self)
-        values[index] = value.encode("utf-8")
-        self.value = "\0".join(values).encode("utf-8")
+        values[index] = value
+        self.value = "\0".join(values).encode()
 
     def pprint(self):
         return " / ".join(self)
@@ -429,6 +430,9 @@ class APEBinaryValue(_APEValue):
     """An APEv2 binary value."""
 
     def pprint(self): return "[%d bytes]" % len(self)
+    
+    def __str__(self):
+        return str(self.value)
 
 class APEExtValue(_APEValue):
     """An APEv2 external value.
@@ -462,5 +466,5 @@ class APEv2File(FileType):
             fileobj.seek(0)
         footer = fileobj.read()
         filename = filename.lower()
-        return (("APETAGEX" in footer) - header.startswith("ID3"))
+        return ((b"APETAGEX" in footer) - header.startswith("ID3"))
     score = staticmethod(score)
