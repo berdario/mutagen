@@ -161,8 +161,6 @@ class cdata(object):
 
     bitswap = ''.join([chr(sum([((val >> i) & 1) << (7-i) for i in range(8)]))
                        for val in range(256)])
-    del(i)
-    del(val)
 
     test_bit = staticmethod(lambda value, n: bool((value >> n) & 1))
 
@@ -300,7 +298,7 @@ def delete_bytes(fobj, size, offset, BUFFER_SIZE=2**16):
 
 def utf8(data):
     """Convert a basestring to a valid UTF-8 str."""
-    if isinstance(data, str):
+    if isinstance(data, bytes):
         return data.decode("utf-8", "replace").encode("utf-8")
     elif isinstance(data, str):
         return data.encode("utf-8")
