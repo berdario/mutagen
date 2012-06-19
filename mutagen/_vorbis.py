@@ -108,7 +108,7 @@ class VComment(mutagen.Metadata, list):
                 except UnicodeEncodeError:
                     raise VorbisEncodingError("invalid tag name %r" % tag)
                 else:
-                    if is_valid_key(tag): self.append((tag, value))
+                    if is_valid_key(tag): self.append((tag.decode(), value))
             if framing and not ord(fileobj.read(1)) & 0x01:
                 raise VorbisUnsetFrameError("framing bit was unset")
         except (cdata.error, TypeError):
@@ -135,6 +135,13 @@ class VComment(mutagen.Metadata, list):
                 except: raise ValueError("%r is not a valid value" % value)
         else: return True
 
+    def append(self, tup):
+        key, value = tup
+        if isinstance(key, str):
+            key = key.lower() 
+            # we want be lax when appending & catch errors when validating
+        super().append((key, value))
+
     def clear(self):
         """Clear all keys from the comment."""
         del(self[:])
@@ -156,10 +163,10 @@ class VComment(mutagen.Metadata, list):
         f.write(self.vendor.encode('utf-8'))
         f.write(cdata.to_uint_le(len(self)))
         for tag, value in self:
-            comment = "%s=%s" % (tag, value.encode('utf-8'))
+            comment = tag.encode() + b"=" + value.encode()
             f.write(cdata.to_uint_le(len(comment)))
             f.write(comment)
-        if framing: f.write("\x01")
+        if framing: f.write(b"\x01")
         return f.getvalue()
 
     def pprint(self):
@@ -186,21 +193,21 @@ class VCommentDict(VComment, DictMixin):
         work.
 
         """
-        key = key.lower().encode('ascii')
-        values = [value for (k, value) in self if k.lower() == key]
+        key.encode('ascii') # test if it's ascii
+        values = [value for (k, value) in self if k == key.lower()]
         if not values: raise KeyError(key)
         else: return values
 
     def __delitem__(self, key):
         """Delete all values associated with the key."""
-        key = key.lower().encode('ascii')
-        to_delete = [x for x in self if x[0].lower() == key]
+        key.encode('ascii') # test if it's ascii
+        to_delete = [x for x in self if x[0] == key.lower()]
         if not to_delete:raise KeyError(key)
         else: list(map(self.remove, to_delete))
 
     def __contains__(self, key):
         """Return true if the key has any values."""
-        key = key.lower().encode('ascii')
+        key = key.lower()
         for k, value in self:
             if k.lower() == key: return True
         else: return False
@@ -213,7 +220,7 @@ class VCommentDict(VComment, DictMixin):
         string.
 
         """
-        key = key.lower().encode('ascii')
+        key.encode('ascii') # test if it's ascii
         if not isinstance(values, list):
             values = [values]
         try: del(self[key])
@@ -227,4 +234,4 @@ class VCommentDict(VComment, DictMixin):
 
     def as_dict(self):
         """Return a copy of the comment data in a real dict."""
-        return dict([(key, self[key]) for key in list(self.keys())])
+        return {key: self[key] for key in self.keys()}

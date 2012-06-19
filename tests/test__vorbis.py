@@ -54,7 +54,7 @@ class TVComment(TestCase):
         self.failUnlessRaises(ValueError, self.c.write)
 
     def test_validate_nonunicode_value(self):
-        self.c.append(("valid", "wt\xff"))
+        self.c.append(("valid", b"wt\xff"))
         self.failUnlessRaises(ValueError, self.c.validate)
         self.failUnlessRaises(ValueError, self.c.write)
 
@@ -63,46 +63,46 @@ class TVComment(TestCase):
 
     def test_vendor_set(self):
         self.c.vendor = "Not Mutagen"
-        self.failUnless(self.c.write()[4:].startswith("Not Mutagen"))
+        self.failUnless(self.c.write()[4:].startswith(b"Not Mutagen"))
 
     def test_vendor_invalid(self):
-        self.c.vendor = "\xffNot Mutagen"
+        self.c.vendor = b"\xffNot Mutagen"
         self.failUnlessRaises(ValueError, self.c.validate)
         self.failUnlessRaises(ValueError, self.c.write)
 
     def test_invalid_format_strict(self):
-        data = ('\x07\x00\x00\x00Mutagen\x01\x00\x00\x00\x03\x00\x00'
-                '\x00abc\x01')
+        data = (b'\x07\x00\x00\x00Mutagen\x01\x00\x00\x00\x03\x00\x00'
+                b'\x00abc\x01')
         self.failUnlessRaises(IOError, VComment, data, errors='strict')
 
     def test_invalid_format_replace(self):
-        data = ('\x07\x00\x00\x00Mutagen\x01\x00\x00\x00\x03\x00\x00'
-                '\x00abc\x01')
+        data = (b'\x07\x00\x00\x00Mutagen\x01\x00\x00\x00\x03\x00\x00'
+                b'\x00abc\x01')
         comment = VComment(data)
         self.failUnlessEqual("abc", comment[0][1])
 
     def test_invalid_format_ignore(self):
-        data = ('\x07\x00\x00\x00Mutagen\x01\x00\x00\x00\x03\x00\x00'
-                '\x00abc\x01')
+        data = (b'\x07\x00\x00\x00Mutagen\x01\x00\x00\x00\x03\x00\x00'
+                b'\x00abc\x01')
         comment = VComment(data, errors='ignore')
         self.failIf(len(comment))
 
     # Slightly different test data than above, we want the tag name
     # to be valid UTF-8 but not valid ASCII.
     def test_invalid_tag_strict(self):
-        data = ('\x07\x00\x00\x00Mutagen\x01\x00\x00\x00\x04\x00\x00'
-                '\x00\xc2\xaa=c\x01')
+        data = (b'\x07\x00\x00\x00Mutagen\x01\x00\x00\x00\x04\x00\x00'
+                b'\x00\xc2\xaa=c\x01')
         self.failUnlessRaises(IOError, VComment, data, errors='strict')
 
     def test_invalid_tag_replace(self):
-        data = ('\x07\x00\x00\x00Mutagen\x01\x00\x00\x00\x04\x00\x00'
-                '\x00\xc2\xaa=c\x01')
+        data = (b'\x07\x00\x00\x00Mutagen\x01\x00\x00\x00\x04\x00\x00'
+                b'\x00\xc2\xaa=c\x01')
         comment = VComment(data)
         self.failUnlessEqual("?=c", comment.pprint())
 
     def test_invalid_tag_ignore(self):
-        data = ('\x07\x00\x00\x00Mutagen\x01\x00\x00\x00\x04\x00\x00'
-                '\x00\xc2\xaa=c\x01')
+        data = (b'\x07\x00\x00\x00Mutagen\x01\x00\x00\x00\x04\x00\x00'
+                b'\x00\xc2\xaa=c\x01')
         comment = VComment(data, errors='ignore')
         self.failIf(len(comment))
 
