@@ -114,11 +114,11 @@ class MPEGInfo(object):
         # is assuming the offset didn't lie.
         data = fileobj.read(32768)
 
-        frame_1 = data.find("\xff")
+        frame_1 = data.find(b"\xff")
         while 0 <= frame_1 <= len(data) - 4:
             frame_data = struct.unpack(">I", data[frame_1:frame_1 + 4])[0]
             if (frame_data >> 16) & 0xE0 != 0xE0:
-                frame_1 = data.find("\xff", frame_1 + 2)
+                frame_1 = data.find(b"\xff", frame_1 + 2)
             else:
                 version = (frame_data >> 19) & 0x3
                 layer = (frame_data >> 17) & 0x3
@@ -134,7 +134,7 @@ class MPEGInfo(object):
                 emphasis = (frame_data >> 0) & 0x3
                 if (version == 1 or layer == 0 or sample_rate == 0x3 or
                     bitrate == 0 or bitrate == 0xF):
-                    frame_1 = data.find("\xff", frame_1 + 2)
+                    frame_1 = data.find(b"\xff", frame_1 + 2)
                 else: break
         else:
             raise HeaderNotFoundError("can't sync to an MPEG frame")

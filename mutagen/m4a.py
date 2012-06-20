@@ -187,7 +187,7 @@ class M4ATags(DictProxy, Metadata):
         trkn, disk -- tuple of 16 bit ints (current, total)
         tmpo -- 16 bit int
         covr -- list of M4ACover objects (which are tagged strs)
-        gnre -- not supported. Use '\\xa9gen' instead.
+        gnre -- not supported. Use 'b\\xa9gen' instead.
 
     The freeform '----' frames use a key in the format '----:mean:name'
     where 'mean' is usually 'com.apple.iTunes' and 'name' is a unique
@@ -215,10 +215,10 @@ class M4ATags(DictProxy, Metadata):
         (key2, v2) = item2
         # iTunes always writes the tags in order of "relevance", try
         # to copy it as closely as possible.
-        order = ["\xa9nam", "\xa9ART", "\xa9wrt", "\xa9alb",
-                 "\xa9gen", "gnre", "trkn", "disk",
-                 "\xa9day", "cpil", "tmpo", "\xa9too",
-                 "----", "covr", "\xa9lyr"]
+        order = [b"\xa9nam", b"\xa9ART", b"\xa9wrt", b"\xa9alb",
+                 b"\xa9gen", "gnre", "trkn", "disk",
+                 b"\xa9day", "cpil", "tmpo", b"\xa9too",
+                 "----", "covr", b"\xa9lyr"]
         order = dict(list(zip(order, list(range(len(order))))))
         last = len(order)
         # If there's no key-based way to distinguish, order by length.
@@ -268,7 +268,7 @@ class M4ATags(DictProxy, Metadata):
         fileobj.seek(moov.offset)
         data = fileobj.read(moov.length)
         fileobj.seek(moov.offset)
-        free = Atom.render("free", "\x00" * (moov.length - 8))
+        free = Atom.render("free", b"\x00" * (moov.length - 8))
         fileobj.write(free)
         fileobj.seek(0, 2)
         # Figure out how far we have to shift all our successive
@@ -278,8 +278,8 @@ class M4ATags(DictProxy, Metadata):
         return old_end - moov.offset
 
     def __save_new(self, fileobj, atoms, ilst, offset):
-        hdlr = Atom.render("hdlr", "\x00" * 8 + "mdirappl" + "\x00" * 9)
-        meta = Atom.render("meta", "\x00\x00\x00\x00" + hdlr + ilst)
+        hdlr = Atom.render("hdlr", b"\x00" * 8 + "mdirappl" + b"\x00" * 9)
+        meta = Atom.render("meta", b"\x00\x00\x00\x00" + hdlr + ilst)
         moov, udta = atoms.path("moov", "udta")
         insert_bytes(fileobj, len(meta), udta.offset + offset + 8)
         fileobj.seek(udta.offset + offset + 8)
@@ -357,8 +357,8 @@ class M4ATags(DictProxy, Metadata):
     def __parse_genre(self, atom, data):
         # Translate to a freeform genre.
         genre = cdata.short_be(data[16:18])
-        if "\xa9gen" not in self:
-            try: self["\xa9gen"] = GENRES[genre - 1]
+        if b"\xa9gen" not in self:
+            try: self[b"\xa9gen"] = GENRES[genre - 1]
             except IndexError: pass
 
     def __parse_tempo(self, atom, data):

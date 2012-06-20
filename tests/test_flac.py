@@ -42,14 +42,14 @@ class TMetadataBlock(TestCase):
         self.failUnlessEqual(b.write(), "quux")
 
     def test_writeblocks(self):
-        blocks = [Padding("\x00" * 20), Padding("\x00" * 30)]
+        blocks = [Padding(b"\x00" * 20), Padding(b"\x00" * 30)]
         self.failUnlessEqual(len(MetadataBlock.writeblocks(blocks)), 58)
 
     def test_ctr_garbage(self):
         self.failUnlessRaises(TypeError, StreamInfo, 12)
 
     def test_group_padding(self):
-        blocks = [Padding("\x00" * 20), Padding("\x00" * 30),
+        blocks = [Padding(b"\x00" * 20), Padding(b"\x00" * 30),
                   MetadataBlock("foobar")]
         blocks[-1].code = 0
         length1 = len(MetadataBlock.writeblocks(blocks))

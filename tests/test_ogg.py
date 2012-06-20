@@ -279,11 +279,11 @@ class TOggPage(TestCase):
         self.failUnlessRaises(OggError, OggPage, StringIO(page.write()))
 
     def test_not_enough_lacing(self):
-        data = OggPage().write()[:-1] + "\x10"
+        data = OggPage().write()[:-1] + b"\x10"
         self.failUnlessRaises(OggError, OggPage, StringIO(data))
 
     def test_not_enough_data(self):
-        data = OggPage().write()[:-1] + "\x01\x10"
+        data = OggPage().write()[:-1] + b"\x01\x10"
         self.failUnlessRaises(OggError, OggPage, StringIO(data))
 
     def test_not_equal(self):

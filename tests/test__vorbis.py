@@ -35,10 +35,10 @@ class TVComment(TestCase):
 
     def test_unset_framing_bit(self):
         self.failUnlessRaises(
-            IOError, VComment, "\x00\x00\x00\x00" * 2 + "\x00")
+            IOError, VComment, b"\x00\x00\x00\x00" * 2 + b"\x00")
 
     def test_empty_valid(self):
-        self.failIf(VComment("\x00\x00\x00\x00" * 2 + "\x01"))
+        self.failIf(VComment(b"\x00\x00\x00\x00" * 2 + b"\x01"))
 
     def test_validate(self):
         self.failUnless(self.c.validate())

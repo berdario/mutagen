@@ -17,12 +17,12 @@ class TAtom(TestCase):
     uses_mmap = False
 
     def test_no_children(self):
-        fileobj = StringIO("\x00\x00\x00\x08atom")
+        fileobj = StringIO(b"\x00\x00\x00\x08atom")
         atom = Atom(fileobj)
         self.failUnlessRaises(KeyError, atom.__getitem__, "test")
 
     def test_length_1(self):
-        fileobj = StringIO("\x00\x00\x00\x01atom" + "\x00" * 8)
+        fileobj = StringIO(b"\x00\x00\x00\x01atom" + b"\x00" * 8)
         self.failUnlessRaises(IOError, Atom, fileobj)
 
     def test_render_too_big(self):
@@ -39,7 +39,7 @@ class TAtom(TestCase):
             self.failUnlessEqual(len(data), 4 + 4 + 8 + 4)
 
     def test_length_0(self):
-        fileobj = StringIO("\x00\x00\x00\x00atom")
+        fileobj = StringIO(b"\x00\x00\x00\x00atom")
         Atom(fileobj)
         self.failUnlessEqual(fileobj.tell(), 8)
 add(TAtom)
@@ -77,9 +77,9 @@ class TM4AInfo(TestCase):
             IOError, self.test_mdhd_version_1, "no so und data here")
 
     def test_mdhd_version_1(self, soun="soun"):
-        mdhd = Atom.render("mdhd", ("\x01\x00\x00\x00" + "\x00" * 16 +
-                                    "\x00\x00\x00\x02" + # 2 Hz
-                                    "\x00\x00\x00\x00\x00\x00\x00\x10"))
+        mdhd = Atom.render("mdhd", (b"\x01\x00\x00\x00" + b"\x00" * 16 +
+                                    b"\x00\x00\x00\x02" + # 2 Hz
+                                    b"\x00\x00\x00\x00\x00\x00\x00\x10"))
         hdlr = Atom.render("hdlr", soun)
         mdia = Atom.render("mdia", mdhd + hdlr)
         trak = Atom.render("trak", mdia)
@@ -95,7 +95,7 @@ class TM4ATags(TestCase):
 
     def wrap_ilst(self, data):
         ilst = Atom.render("ilst", data)
-        meta = Atom.render("meta", "\x00" * 4 + ilst)
+        meta = Atom.render("meta", b"\x00" * 4 + ilst)
         data = Atom.render("moov", Atom.render("udta", meta))
         fileobj = StringIO(data)
         return M4ATags(Atoms(fileobj), fileobj)
@@ -103,37 +103,37 @@ class TM4ATags(TestCase):
     def test_bad_freeform(self):
         mean = Atom.render("mean", "net.sacredchao.Mutagen")
         name = Atom.render("name", "empty test key")
-        bad_freeform = Atom.render("----", "\x00" * 4 + mean + name)
+        bad_freeform = Atom.render("----", b"\x00" * 4 + mean + name)
         self.failIf(self.wrap_ilst(bad_freeform))
 
     def test_genre(self):
-        data = Atom.render("data", "\x00" * 8 + "\x00\x01")
+        data = Atom.render("data", b"\x00" * 8 + b"\x00\x01")
         genre = Atom.render("gnre", data)
         tags = self.wrap_ilst(genre)
         self.failIf("gnre" in tags)
-        self.failUnlessEqual(tags.get("\xa9gen"), "Blues")
+        self.failUnlessEqual(tags.get(b"\xa9gen"), "Blues")
 
     def test_empty_cpil(self):
-        cpil = Atom.render("cpil", Atom.render("data", "\x00" * 8))
+        cpil = Atom.render("cpil", Atom.render("data", b"\x00" * 8))
         tags = self.wrap_ilst(cpil)
         self.failUnless("cpil" in tags)
         self.failIf(tags["cpil"])
 
     def test_genre_too_big(self):
-        data = Atom.render("data", "\x00" * 8 + "\x01\x00")
+        data = Atom.render("data", b"\x00" * 8 + b"\x01\x00")
         genre = Atom.render("gnre", data)
         tags = self.wrap_ilst(genre)
         self.failIf("gnre" in tags)
-        self.failIf("\xa9gen" in tags)
+        self.failIf(b"\xa9gen" in tags)
 
     def test_strips_unknown_types(self):
-        data = Atom.render("data", "\x00" * 8 + "whee")
+        data = Atom.render("data", b"\x00" * 8 + "whee")
         foob = Atom.render("foob", data)
         tags = self.wrap_ilst(foob)
         self.failIf(tags)
 
     def test_bad_covr(self):
-        data = Atom.render("foob", "\x00\x00\x00\x0E" + "\x00" * 4 + "whee")
+        data = Atom.render("foob", b"\x00\x00\x00\x0E" + b"\x00" * 4 + "whee")
         covr = Atom.render("covr", data)
         self.failUnlessRaises(M4AMetadataError, self.wrap_ilst, covr)
 
@@ -168,7 +168,7 @@ class TM4A(TestCase):
         self.faad()
 
     def test_save_text(self):
-        self.set_key('\xa9nam', "Some test name")
+        self.set_key(b'\xa9nam', "Some test name")
 
     def test_freeform(self):
         self.set_key('----:net.sacredchao.Mutagen:test key', "whee")
@@ -220,7 +220,7 @@ class TM4A(TestCase):
         self.audio.pprint()
 
     def test_pprint_binary(self):
-        self.audio["covr"] = "\x00\xa9\garbage"
+        self.audio["covr"] = b"\x00\xa9\garbage"
         self.audio.pprint()
 
     def test_delete(self):

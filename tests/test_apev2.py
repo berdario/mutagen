@@ -25,7 +25,7 @@ class Tis_valid_apev2_key(TestCase):
             self.failUnless(is_valid_apev2_key(key))
 
     def test_no(self):
-        for key in ["\x11hi", "ffoo\xFF", "\u1234", "a", "", "foo" * 100]:
+        for key in [b"\x11hi", "ffoo\xFF", "\u1234", "a", "", "foo" * 100]:
             self.failIf(is_valid_apev2_key(key))
 add(Tis_valid_apev2_key)
 
@@ -273,7 +273,7 @@ class TAPEBinaryValue(TestCase):
     from mutagen.apev2 import APEBinaryValue as BV
 
     def setUp(self):
-        self.sample = "\x12\x45\xde"
+        self.sample = b"\x12\x45\xde"
         self.value = mutagen.apev2.APEValue(self.sample, mutagen.apev2.BINARY)
 
     def test_type(self):

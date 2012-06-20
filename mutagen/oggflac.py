@@ -45,7 +45,7 @@ class OggFLACStreamInfo(StreamInfo):
 
     def load(self, data):
         page = OggPage(data)
-        while not page.packets[0].startswith("\x7FFLAC"):
+        while not page.packets[0].startswith(b"\x7FFLAC"):
             page = OggPage(data)
         major, minor, self.packets, flac = struct.unpack(
             ">BBH4s", page.packets[0][5:13])
@@ -84,7 +84,7 @@ class OggFLACVComment(VCFLACDict):
         # second packet - and second page - must be the comment data.
         fileobj.seek(0)
         page = OggPage(fileobj)
-        while not page.packets[0].startswith("\x7FFLAC"):
+        while not page.packets[0].startswith(b"\x7FFLAC"):
             page = OggPage(fileobj)
 
         first_page = page

@@ -67,7 +67,7 @@ class EasyMP4Tags(DictMixin, Metadata):
         If the key you need to register is a simple one-to-one mapping
         of MP4 atom name to EasyMP4Tags key, then you can use this
         function:
-            EasyMP4Tags.RegisterTextKey("artist", "\xa9ART")
+            EasyMP4Tags.RegisterTextKey("artist", b"\xa9ART")
         """
         def getter(tags, key):
             return tags[atomid]
@@ -196,15 +196,15 @@ class EasyMP4Tags(DictMixin, Metadata):
         return "\n".join(strings)
 
 for atomid, key in list({
-    '\xa9nam': 'title',
-    '\xa9alb': 'album',
-    '\xa9ART': 'artist',
+    b'\xa9nam': 'title',
+    b'\xa9alb': 'album',
+    b'\xa9ART': 'artist',
     'aART': 'albumartist',
-    '\xa9day': 'date',
-    '\xa9cmt': 'comment',
+    b'\xa9day': 'date',
+    b'\xa9cmt': 'comment',
     'desc': 'description',
-    '\xa9grp': 'grouping',
-    '\xa9gen': 'genre',
+    b'\xa9grp': 'grouping',
+    b'\xa9gen': 'genre',
     'cprt': 'copyright',
     'soal': 'albumsort',
     'soaa': 'albumartistsort',

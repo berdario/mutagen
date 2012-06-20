@@ -57,7 +57,7 @@ class TMusepack(TestCase):
 
     def test_almost_my_file(self):
         self.failUnlessRaises(
-            MusepackHeaderError, MusepackInfo, StringIO("MP+" + "\x00" * 100))
+            MusepackHeaderError, MusepackInfo, StringIO("MP+" + b"\x00" * 100))
 
     def test_pprint(self):
         self.sv7.pprint()

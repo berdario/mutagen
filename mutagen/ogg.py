@@ -139,9 +139,9 @@ class OggPage(object):
         lacing_data = []
         for datum in self.packets:
             quot, rem = divmod(len(datum), 255)
-            lacing_data.append("\xff" * quot + chr(rem))
+            lacing_data.append(b"\xff" * quot + chr(rem))
         lacing_data = "".join(lacing_data)
-        if not self.complete and lacing_data.endswith("\x00"):
+        if not self.complete and lacing_data.endswith(b"\x00"):
             lacing_data = lacing_data[:-1]
         data.append(chr(len(lacing_data)))
         data.append(lacing_data)

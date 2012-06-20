@@ -39,7 +39,7 @@ class OggVorbisInfo(object):
 
     def __init__(self, fileobj):
         page = OggPage(fileobj)
-        while not page.packets[0].startswith("\x01vorbis"):
+        while not page.packets[0].startswith(b"\x01vorbis"):
             page = OggPage(fileobj)
         if not page.first:
             raise OggVorbisHeaderError(
@@ -82,7 +82,7 @@ class OggVCommentDict(VCommentDict):
             if page.serial == info.serial:
                 pages.append(page)
                 complete = page.complete or (len(page.packets) > 1)
-        data = OggPage.to_packets(pages)[0][7:] # Strip off "\x03vorbis".
+        data = OggPage.to_packets(pages)[0][7:] # Strip off b"\x03vorbis".
         super(OggVCommentDict, self).__init__(data)
 
     def _inject(self, fileobj):
@@ -92,7 +92,7 @@ class OggVCommentDict(VCommentDict):
         # plus grab any stray setup packet data out of them.
         fileobj.seek(0)
         page = OggPage(fileobj)
-        while not page.packets[0].startswith("\x03vorbis"):
+        while not page.packets[0].startswith(b"\x03vorbis"):
             page = OggPage(fileobj)
 
         old_pages = [page]
@@ -104,7 +104,7 @@ class OggVCommentDict(VCommentDict):
         packets = OggPage.to_packets(old_pages, strict=False)
 
         # Set the new comment packet.
-        packets[0] = "\x03vorbis" + self.write()
+        packets[0] = b"\x03vorbis" + self.write()
 
         new_pages = OggPage.from_packets(packets, old_pages[0].sequence)
         OggPage.replace(fileobj, old_pages, new_pages)
@@ -118,7 +118,7 @@ class OggVorbis(OggFileType):
     _mimes = ["audio/vorbis", "audio/x-vorbis"]
 
     def score(filename, fileobj, header):
-        return (header.startswith("OggS") * ("\x01vorbis" in header))
+        return (header.startswith("OggS") * (b"\x01vorbis" in header))
     score = staticmethod(score)
 
 Open = OggVorbis

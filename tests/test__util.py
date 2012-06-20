@@ -23,9 +23,9 @@ class Tutf8(TestCase):
         self.failUnless(isinstance(value, str))
 
     def test_bad_str(self):
-        value = utf8("\xab\xde")
+        value = utf8(b"\xab\xde")
         # Two '?' symbols.
-        self.failUnlessEqual(value, "\xef\xbf\xbd\xef\xbf\xbd")
+        self.failUnlessEqual(value, b"\xef\xbf\xbd\xef\xbf\xbd")
         self.failUnless(isinstance(value, str))
 
     def test_low_unicode(self):
@@ -35,7 +35,7 @@ class Tutf8(TestCase):
 
     def test_high_unicode(self):
         value = utf8("\u1234")
-        self.failUnlessEqual(value, '\xe1\x88\xb4')
+        self.failUnlessEqual(value, b'\xe1\x88\xb4')
         self.failUnless(isinstance(value, str))
 
     def test_invalid(self):
@@ -140,10 +140,10 @@ add(TDictMixin)
 class Tcdata(TestCase):
     uses_mmap = False
 
-    ZERO = "\x00\x00\x00\x00"
-    LEONE = "\x01\x00\x00\x00"
-    BEONE = "\x00\x00\x00\x01"
-    NEGONE = "\xff\xff\xff\xff"
+    ZERO = b"\x00\x00\x00\x00"
+    LEONE = b"\x01\x00\x00\x00"
+    BEONE = b"\x00\x00\x00\x01"
+    NEGONE = b"\xff\xff\xff\xff"
 
     def test_int_le(self):
         self.failUnlessEqual(cdata.int_le(self.ZERO), 0)
@@ -206,17 +206,17 @@ class FileHandling(TestCase):
     def test_insert_into_empty(self):
         o = self.file('')
         insert_bytes(o, 8, 0)
-        self.assertEquals('\x00' * 8, self.read(o))
+        self.assertEquals(b'\x00' * 8, self.read(o))
 
     def test_insert_before_one(self):
         o = self.file('a')
         insert_bytes(o, 8, 0)
-        self.assertEquals('a' + '\x00' * 7 + 'a', self.read(o))
+        self.assertEquals('a' + b'\x00' * 7 + 'a', self.read(o))
 
     def test_insert_after_one(self):
         o = self.file('a')
         insert_bytes(o, 8, 1)
-        self.assertEquals('a' + '\x00' * 8, self.read(o))
+        self.assertEquals('a' + b'\x00' * 8, self.read(o))
 
     def test_smaller_than_file_middle(self):
         o = self.file('abcdefghij')

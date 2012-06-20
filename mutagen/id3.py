@@ -250,7 +250,7 @@ class ID3(DictProxy, mutagen.Metadata):
             else:
                 self.__extdata = ""
 
-    def __determine_bpi(self, data, frames, EMPTY="\x00" * 10):
+    def __determine_bpi(self, data, frames, EMPTY=b"\x00" * 10):
         if self.version < (2, 4, 0):
             return int
         # have to special case whether to use bitpaddedints here
@@ -303,7 +303,7 @@ class ID3(DictProxy, mutagen.Metadata):
                 header = data[:10]
                 try: name, size, flags = unpack('>4sLH', header)
                 except struct.error: return # not enough header
-                if name.strip('\x00') == '': return
+                if name.strip(b'\x00') == '': return
                 size = bpi(size)
                 framedata = data[10:10+size]
                 data = data[10+size:]
@@ -321,8 +321,8 @@ class ID3(DictProxy, mutagen.Metadata):
                 header = data[0:6]
                 try: name, size = unpack('>3s3s', header)
                 except struct.error: return # not enough header
-                size, = struct.unpack('>L', '\x00'+size)
-                if name.strip('\x00') == '': return
+                size, = struct.unpack('>L', b'\x00'+size)
+                if name.strip(b'\x00') == '': return
                 framedata = data[6:6+size]
                 data = data[6+size:]
                 if size == 0: continue # drop empty frames
@@ -394,7 +394,7 @@ class ID3(DictProxy, mutagen.Metadata):
 
             if insize >= framesize: outsize = insize
             else: outsize = (framesize + 1023) & ~0x3FF
-            framedata += '\x00' * (outsize - framesize)
+            framedata += b'\x00' * (outsize - framesize)
 
             framesize = BitPaddedInt.to_str(outsize, width=4)
             flags = 0
@@ -481,12 +481,12 @@ class ID3(DictProxy, mutagen.Metadata):
 
         # TDAT, TYER, and TIME have been turned into TDRC.
         try:
-            if str(self.get("TYER", "")).strip("\x00"):
+            if str(self.get("TYER", "")).strip(b"\x00"):
                 date = str(self.pop("TYER"))
-                if str(self.get("TDAT", "")).strip("\x00"):
+                if str(self.get("TDAT", "")).strip(b"\x00"):
                     dat = str(self.pop("TDAT"))
                     date = "%s-%s-%s" % (date, dat[2:], dat[:2])
-                    if str(self.get("TIME", "")).strip("\x00"):
+                    if str(self.get("TIME", "")).strip(b"\x00"):
                         time = str(self.pop("TIME"))
                         date += "T%s:%s:00" % (time[:2], time[2:])
                 if "TDRC" not in self:
@@ -618,10 +618,10 @@ class unsynch(object):
         for val in value:
             if safe:
                 append(val)
-                safe = val != '\xFF'
+                safe = val != b'\xFF'
             else:
-                if val >= '\xE0': raise ValueError('invalid sync-safe string')
-                elif val != '\x00': append(val)
+                if val >= b'\xE0': raise ValueError('invalid sync-safe string')
+                elif val != b'\x00': append(val)
                 safe = True
         if not safe: raise ValueError('string ended unsafe')
         return ''.join(output)
@@ -634,15 +634,15 @@ class unsynch(object):
         for val in value:
             if safe:
                 append(val)
-                if val == '\xFF': safe = False
-            elif val == '\x00' or val >= '\xE0':
-                append('\x00')
+                if val == b'\xFF': safe = False
+            elif val == b'\x00' or val >= b'\xE0':
+                append(b'\x00')
                 append(val)
-                safe = val != '\xFF'
+                safe = val != b'\xFF'
             else:
                 append(val)
                 safe = True
-        if not safe: append('\x00')
+        if not safe: append(b'\x00')
         return ''.join(output)
     encode = staticmethod(encode)
 
@@ -690,8 +690,8 @@ class StringSpec(Spec):
         self.len = length
     def read(s, frame, data): return data[:s.len], data[s.len:]
     def write(s, frame, value):
-        if value is None: return '\x00' * s.len
-        else: return (str(value) + '\x00' * s.len)[:s.len]
+        if value is None: return b'\x00' * s.len
+        else: return (str(value) + b'\x00' * s.len)[:s.len]
     def validate(s, frame, value):
         if value is None: return None
         if isinstance(value, str) and len(value) == s.len: return value
@@ -779,12 +779,12 @@ class EncodedNumericPartTextSpec(EncodedTextSpec): pass
 
 class Latin1TextSpec(EncodedTextSpec):
     def read(self, frame, data):
-        if '\x00' in data: data, ret = data.split('\x00', 1)
+        if b'\x00' in data: data, ret = data.split(b'\x00', 1)
         else: ret = ''
         return data.decode('latin1'), ret
 
     def write(self, data, value):
-        return value.encode('latin1') + '\x00'
+        return value.encode('latin1') + b'\x00'
 
     def validate(self, frame, value): return str(value)
 
@@ -874,7 +874,7 @@ class VolumePeakSpec(Spec):
 
     def write(self, frame, value):
         # always write as 16 bits for sanity.
-        return "\x10" + pack('>H', int(round(value * 32768)))
+        return b"\x10" + pack('>H', int(round(value * 32768)))
 
     def validate(self, frame, value): return value
 
@@ -1030,7 +1030,7 @@ class Frame(object):
                     raise ID3JunkFrameError
             else: raise ID3JunkFrameError
             setattr(self, reader.name, value)
-        if data.strip('\x00'):
+        if data.strip(b'\x00'):
             warn('Leftover data: %s: %r (from %r)' % (
                     type(self).__name__, data, odata),
                     ID3Warning)
@@ -1126,7 +1126,7 @@ class FrameOpt(Frame):
                 if len(data): value, data = reader.read(self, data)
                 else: break
                 setattr(self, reader.name, value)
-        if data.strip('\x00'):
+        if data.strip(b'\x00'):
             warn('Leftover data: %s: %r (from %r)' % (
                     type(self).__name__, data, odata),
                     ID3Warning)
@@ -1958,7 +1958,7 @@ def ParseID3v1(string):
         return None
 
     def fix(string):
-        return string.split("\x00")[0].strip().decode('latin1')
+        return string.split(b"\x00")[0].strip().decode('latin1')
 
     title, artist, album, year, comment = list(map(
         fix, [title, artist, album, year, comment]))
@@ -1972,7 +1972,7 @@ def ParseID3v1(string):
         encoding=0, lang="eng", desc="ID3v1 Comment", text=comment)
     # Don't read a track number if it looks like the comment was
     # padded with spaces instead of nulls (thanks, WinAmp).
-    if track and (track != 32 or string[-3] == '\x00'):
+    if track and (track != 32 or string[-3] == b'\x00'):
         frames["TRCK"] = TRCK(encoding=0, text=str(track))
     if genre != 255: frames["TCON"] = TCON(encoding=0, text=str(genre))
     return frames
@@ -1988,18 +1988,18 @@ def MakeID3v1(id3):
             text = id3[v2id].text[0].encode('latin1', 'replace')[:30]
         else:
             text = ""
-        v1[name] = text + ("\x00" * (30 - len(text)))
+        v1[name] = text + (b"\x00" * (30 - len(text)))
 
     if "COMM" in id3:
         cmnt = id3["COMM"].text[0].encode('latin1', 'replace')[:28]
     else:
         cmnt = ""
-    v1["comment"] = cmnt + ("\x00" * (29 - len(cmnt)))
+    v1["comment"] = cmnt + (b"\x00" * (29 - len(cmnt)))
 
     if "TRCK" in id3:
         try: v1["track"] = chr(+id3["TRCK"])
-        except ValueError: v1["track"] = "\x00"
-    else: v1["track"] = "\x00"
+        except ValueError: v1["track"] = b"\x00"
+    else: v1["track"] = b"\x00"
 
     if "TCON" in id3:
         try: genre = id3["TCON"].genres[0]
@@ -2008,7 +2008,7 @@ def MakeID3v1(id3):
             if genre in TCON.GENRES:
                 v1["genre"] = chr(TCON.GENRES.index(genre))
     if "genre" not in v1:
-        v1["genre"] = "\xff"
+        v1["genre"] = b"\xff"
 
     if "TDRC" in id3:
         year = str(id3["TDRC"])
@@ -2016,7 +2016,7 @@ def MakeID3v1(id3):
         year = str(id3["TYER"])
     else:
         year = ""
-    v1["year"] = (year + "\x00\x00\x00\x00")[:4]
+    v1["year"] = (year + b"\x00\x00\x00\x00")[:4]
 
     return ("TAG%(title)s%(artist)s%(album)s%(year)s%(comment)s"
             "%(track)s%(genre)s") % v1 

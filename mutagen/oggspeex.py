@@ -68,7 +68,7 @@ class OggSpeexVComment(VCommentDict):
             if page.serial == info.serial:
                 pages.append(page)
                 complete = page.complete or (len(page.packets) > 1)
-        data = OggPage.to_packets(pages)[0] + "\x01"
+        data = OggPage.to_packets(pages)[0] + b"\x01"
         super(OggSpeexVComment, self).__init__(data, framing=False)
 
     def _inject(self, fileobj):

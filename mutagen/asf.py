@@ -128,13 +128,13 @@ class ASFBaseAttribute(object):
         return name
 
     def render(self, name):
-        name = name.encode("utf-16-le") + "\x00\x00"
+        name = name.encode("utf-16-le") + b"\x00\x00"
         data = self._render()
         return (struct.pack("<H", len(name)) + name +
                 struct.pack("<HH", self.TYPE, len(data)) + data)
 
     def render_m(self, name):
-        name = name.encode("utf-16-le") + "\x00\x00"
+        name = name.encode("utf-16-le") + b"\x00\x00"
         if self.TYPE == 2:
             data = self._render(dword=False)
         else:
@@ -143,7 +143,7 @@ class ASFBaseAttribute(object):
                             self.TYPE, len(data)) + name + data)
 
     def render_ml(self, name):
-        name = name.encode("utf-16-le") + "\x00\x00"
+        name = name.encode("utf-16-le") + b"\x00\x00"
         if self.TYPE == 2:
             data = self._render(dword=False)
         else:
@@ -156,10 +156,10 @@ class ASFUnicodeAttribute(ASFBaseAttribute):
     TYPE = 0x0000
 
     def parse(self, data):
-        return data.decode("utf-16-le").strip("\x00")
+        return data.decode("utf-16-le").strip(b"\x00")
 
     def _render(self):
-        return self.value.encode("utf-16-le") + "\x00\x00"
+        return self.value.encode("utf-16-le") + b"\x00\x00"
 
     def data_size(self):
         return len(self.value) * 2 + 2
@@ -379,12 +379,12 @@ class UnknownObject(BaseObject):
 
 class HeaderObject(object):
     """ASF header."""
-    GUID = "\x30\x26\xB2\x75\x8E\x66\xCF\x11\xA6\xD9\x00\xAA\x00\x62\xCE\x6C"
+    GUID = b"\x30\x26\xB2\x75\x8E\x66\xCF\x11\xA6\xD9\x00\xAA\x00\x62\xCE\x6C"
 
 
 class ContentDescriptionObject(BaseObject):
     """Content description."""
-    GUID = "\x33\x26\xB2\x75\x8E\x66\xCF\x11\xA6\xD9\x00\xAA\x00\x62\xCE\x6C"
+    GUID = b"\x33\x26\xB2\x75\x8E\x66\xCF\x11\xA6\xD9\x00\xAA\x00\x62\xCE\x6C"
 
     def parse(self, asf, data, fileobj, size):
         super(ContentDescriptionObject, self).parse(asf, data, fileobj, size)
@@ -395,7 +395,7 @@ class ContentDescriptionObject(BaseObject):
         for length in lengths:
             end = pos + length
             if length > 0:
-                texts.append(data[pos:end].decode("utf-16-le").strip("\x00"))
+                texts.append(data[pos:end].decode("utf-16-le").strip(b"\x00"))
             else:
                 texts.append(None)
             pos = end
@@ -413,7 +413,7 @@ class ContentDescriptionObject(BaseObject):
         def render_text(name):
             value = asf.tags.get(name, [])
             if value:
-                return value[0].encode("utf-16-le") + "\x00\x00"
+                return value[0].encode("utf-16-le") + b"\x00\x00"
             else:
                 return ""
         texts = list(map(render_text, _standard_attribute_names))
@@ -423,7 +423,7 @@ class ContentDescriptionObject(BaseObject):
 
 class ExtendedContentDescriptionObject(BaseObject):
     """Extended content description."""
-    GUID = "\x40\xA4\xD0\xD2\x07\xE3\xD2\x11\x97\xF0\x00\xA0\xC9\x5E\xA8\x50"
+    GUID = b"\x40\xA4\xD0\xD2\x07\xE3\xD2\x11\x97\xF0\x00\xA0\xC9\x5E\xA8\x50"
 
     def parse(self, asf, data, fileobj, size):
         super(ExtendedContentDescriptionObject, self).parse(asf, data, fileobj, size)
@@ -433,7 +433,7 @@ class ExtendedContentDescriptionObject(BaseObject):
         for i in range(num_attributes):
             name_length, = struct.unpack("<H", data[pos:pos+2])
             pos += 2
-            name = data[pos:pos+name_length].decode("utf-16-le").strip("\x00")
+            name = data[pos:pos+name_length].decode("utf-16-le").strip(b"\x00")
             pos += name_length
             value_type, value_length = struct.unpack("<HH", data[pos:pos+4])
             pos += 4
@@ -451,7 +451,7 @@ class ExtendedContentDescriptionObject(BaseObject):
 
 class FilePropertiesObject(BaseObject):
     """File properties."""
-    GUID = "\xA1\xDC\xAB\x8C\x47\xA9\xCF\x11\x8E\xE4\x00\xC0\x0C\x20\x53\x65"
+    GUID = b"\xA1\xDC\xAB\x8C\x47\xA9\xCF\x11\x8E\xE4\x00\xC0\x0C\x20\x53\x65"
 
     def parse(self, asf, data, fileobj, size):
         super(FilePropertiesObject, self).parse(asf, data, fileobj, size)
@@ -461,7 +461,7 @@ class FilePropertiesObject(BaseObject):
 
 class StreamPropertiesObject(BaseObject):
     """Stream properties."""
-    GUID = "\x91\x07\xDC\xB7\xB7\xA9\xCF\x11\x8E\xE6\x00\xC0\x0C\x20\x53\x65"
+    GUID = b"\x91\x07\xDC\xB7\xB7\xA9\xCF\x11\x8E\xE6\x00\xC0\x0C\x20\x53\x65"
 
     def parse(self, asf, data, fileobj, size):
         super(StreamPropertiesObject, self).parse(asf, data, fileobj, size)
@@ -473,7 +473,7 @@ class StreamPropertiesObject(BaseObject):
 
 class HeaderExtensionObject(BaseObject):
     """Header extension."""
-    GUID = "\xb5\x03\xbf_.\xa9\xcf\x11\x8e\xe3\x00\xc0\x0c Se"
+    GUID = b"\xb5\x03\xbf_.\xa9\xcf\x11\x8e\xe3\x00\xc0\x0c Se"
 
     def parse(self, asf, data, fileobj, size):
         super(HeaderExtensionObject, self).parse(asf, data, fileobj, size)
@@ -494,14 +494,14 @@ class HeaderExtensionObject(BaseObject):
     def render(self, asf):
         data = "".join([obj.render(asf) for obj in self.objects])
         return (self.GUID + struct.pack("<Q", 24 + 16 + 6 + len(data)) +
-                "\x11\xD2\xD3\xAB\xBA\xA9\xcf\x11" +
-                "\x8E\xE6\x00\xC0\x0C\x20\x53\x65" +
-                "\x06\x00" + struct.pack("<I", len(data)) + data)
+                b"\x11\xD2\xD3\xAB\xBA\xA9\xcf\x11" +
+                b"\x8E\xE6\x00\xC0\x0C\x20\x53\x65" +
+                b"\x06\x00" + struct.pack("<I", len(data)) + data)
 
 
 class MetadataObject(BaseObject):
     """Metadata description."""
-    GUID = "\xea\xcb\xf8\xc5\xaf[wH\x84g\xaa\x8cD\xfaL\xca"
+    GUID = b"\xea\xcb\xf8\xc5\xaf[wH\x84g\xaa\x8cD\xfaL\xca"
 
     def parse(self, asf, data, fileobj, size):
         super(MetadataObject, self).parse(asf, data, fileobj, size)
@@ -512,7 +512,7 @@ class MetadataObject(BaseObject):
             (reserved, stream, name_length, value_type,
              value_length) = struct.unpack("<HHHHI", data[pos:pos+12])
             pos += 12
-            name = data[pos:pos+name_length].decode("utf-16-le").strip("\x00")
+            name = data[pos:pos+name_length].decode("utf-16-le").strip(b"\x00")
             pos += name_length
             value = data[pos:pos+value_length]
             pos += value_length
@@ -531,7 +531,7 @@ class MetadataObject(BaseObject):
 
 class MetadataLibraryObject(BaseObject):
     """Metadata library description."""
-    GUID = "\x94\x1c#D\x98\x94\xd1I\xa1A\x1d\x13NEpT"
+    GUID = b"\x94\x1c#D\x98\x94\xd1I\xa1A\x1d\x13NEpT"
 
     def parse(self, asf, data, fileobj, size):
         super(MetadataLibraryObject, self).parse(asf, data, fileobj, size)
@@ -542,7 +542,7 @@ class MetadataLibraryObject(BaseObject):
             (language, stream, name_length, value_type,
              value_length) = struct.unpack("<HHHHI", data[pos:pos+12])
             pos += 12
-            name = data[pos:pos+name_length].decode("utf-16-le").strip("\x00")
+            name = data[pos:pos+name_length].decode("utf-16-le").strip(b"\x00")
             pos += name_length
             value = data[pos:pos+value_length]
             pos += value_length
@@ -637,7 +637,7 @@ class ASF(FileType):
         data = "".join([obj.render(self) for obj in self.objects])
         data = (HeaderObject.GUID +
                 struct.pack("<QL", len(data) + 30, len(self.objects)) +
-                "\x01\x02" + data)
+                b"\x01\x02" + data)
 
         fileobj = open(self.filename, "rb+")
         try:

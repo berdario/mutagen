@@ -231,7 +231,7 @@ def insert_bytes(fobj, size, offset, BUFFER_SIZE=2**16):
             # the file out several megs.
             while padsize:
                 addsize = min(BUFFER_SIZE, padsize)
-                fobj.write("\x00" * addsize)
+                fobj.write(b"\x00" * addsize)
                 padsize -= addsize
 
             fobj.seek(filesize, 0)

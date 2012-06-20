@@ -187,23 +187,23 @@ class MP4Tags(DictProxy, Metadata):
     special structure:
 
     Text values (multiple values per key are supported):
-        '\xa9nam' -- track title
-        '\xa9alb' -- album
-        '\xa9ART' -- artist
+        b'\xa9nam' -- track title
+        b'\xa9alb' -- album
+        b'\xa9ART' -- artist
         'aART' -- album artist
-        '\xa9wrt' -- composer
-        '\xa9day' -- year
-        '\xa9cmt' -- comment
+        b'\xa9wrt' -- composer
+        b'\xa9day' -- year
+        b'\xa9cmt' -- comment
         'desc' -- description (usually used in podcasts)
         'purd' -- purchase date
-        '\xa9grp' -- grouping
-        '\xa9gen' -- genre
-        '\xa9lyr' -- lyrics
+        b'\xa9grp' -- grouping
+        b'\xa9gen' -- genre
+        b'\xa9lyr' -- lyrics
         'purl' -- podcast URL
         'egid' -- podcast episode GUID
         'catg' -- podcast category
         'keyw' -- podcast keywords
-        '\xa9too' -- encoded by
+        b'\xa9too' -- encoded by
         'cprt' -- copyright
         'soal' -- album sort order
         'soaa' -- album artist sort order
@@ -226,7 +226,7 @@ class MP4Tags(DictProxy, Metadata):
         'tmpo' -- tempo/BPM, 16 bit int
         'covr' -- cover artwork, list of MP4Cover objects (which are
                   tagged strs)
-        'gnre' -- ID3v1 genre. Not supported, use '\xa9gen' instead.
+        'gnre' -- ID3v1 genre. Not supported, use b'\xa9gen' instead.
 
     The freeform '----' frames use a key in the format '----:mean:name'
     where 'mean' is usually 'com.apple.iTunes' and 'name' is a unique
@@ -255,10 +255,10 @@ class MP4Tags(DictProxy, Metadata):
         (key2, v2) = item2
         # iTunes always writes the tags in order of "relevance", try
         # to copy it as closely as possible.
-        order = ["\xa9nam", "\xa9ART", "\xa9wrt", "\xa9alb",
-                 "\xa9gen", "gnre", "trkn", "disk",
-                 "\xa9day", "cpil", "pgap", "pcst", "tmpo",
-                 "\xa9too", "----", "covr", "\xa9lyr"]
+        order = [b"\xa9nam", b"\xa9ART", b"\xa9wrt", b"\xa9alb",
+                 b"\xa9gen", "gnre", "trkn", "disk",
+                 b"\xa9day", "cpil", "pgap", "pcst", "tmpo",
+                 b"\xa9too", "----", "covr", b"\xa9lyr"]
         order = dict(list(zip(order, list(range(len(order))))))
         last = len(order)
         # If there's no key-based way to distinguish, order by length.
@@ -297,12 +297,12 @@ class MP4Tags(DictProxy, Metadata):
     def __pad_ilst(self, data, length=None):
         if length is None:
             length = ((len(data) + 1023) & ~1023) - len(data)
-        return Atom.render("free", "\x00" * length)
+        return Atom.render("free", b"\x00" * length)
 
     def __save_new(self, fileobj, atoms, ilst):
-        hdlr = Atom.render("hdlr", "\x00" * 8 + "mdirappl" + "\x00" * 9)
+        hdlr = Atom.render("hdlr", b"\x00" * 8 + "mdirappl" + b"\x00" * 9)
         meta = Atom.render(
-            "meta", "\x00\x00\x00\x00" + hdlr + ilst + self.__pad_ilst(ilst))
+            "meta", b"\x00\x00\x00\x00" + hdlr + ilst + self.__pad_ilst(ilst))
         try:
             path = atoms.path("moov", "udta")
         except KeyError:
@@ -384,7 +384,7 @@ class MP4Tags(DictProxy, Metadata):
             atom.offset += delta
         fileobj.seek(atom.offset + 9)
         data = fileobj.read(atom.length - 9)
-        flags = cdata.uint_be("\x00" + data[:3])
+        flags = cdata.uint_be(b"\x00" + data[:3])
         if flags & 1:
             o = cdata.ulonglong_be(data[7:15])
             if o > offset:
@@ -474,8 +474,8 @@ class MP4Tags(DictProxy, Metadata):
     def __parse_genre(self, atom, data):
         # Translate to a freeform genre.
         genre = cdata.short_be(data[16:18])
-        if "\xa9gen" not in self:
-            try: self["\xa9gen"] = [GENRES[genre - 1]]
+        if b"\xa9gen" not in self:
+            try: self[b"\xa9gen"] = [GENRES[genre - 1]]
             except IndexError: pass
 
     def __parse_tempo(self, atom, data):
@@ -624,7 +624,7 @@ class MP4Info(object):
                     pos = 65
                     # skip extended descriptor type tag, length, ES ID
                     # and stream priority
-                    if data[pos:pos+3] == "\x80\x80\x80":
+                    if data[pos:pos+3] == b"\x80\x80\x80":
                         pos += 3
                     pos += 4
                     # decoder config descriptor type
@@ -633,7 +633,7 @@ class MP4Info(object):
                         # skip extended descriptor type tag, length,
                         # object type ID, stream type, buffer size
                         # and maximum bitrate
-                        if data[pos:pos+3] == "\x80\x80\x80":
+                        if data[pos:pos+3] == b"\x80\x80\x80":
                             pos += 3
                         pos += 10
                         # average bitrate
