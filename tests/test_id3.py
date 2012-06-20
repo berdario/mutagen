@@ -1512,20 +1512,20 @@ class WriteRoundtrip(TestCase):
     def test_nofile_emptytag(self):
         os.unlink(self.newsilence)
         ID3().save(self.newsilence)
-        self.assertRaises(EnvironmentError, open, self.newsilence)
+        self.assertRaises(EnvironmentError, open, self.newsilence, 'rb')
 
     def test_nofile_silencetag(self):
         id3 = ID3(self.newsilence)
         os.unlink(self.newsilence)
         id3.save(self.newsilence)
-        self.assertEquals('ID3', open(self.newsilence).read(3))
+        self.assertEquals(b'ID3', open(self.newsilence, 'rb').read(3))
         self.test_same()
 
     def test_emptyfile_silencetag(self):
         id3 = ID3(self.newsilence)
         open(self.newsilence, 'wb').truncate()
         id3.save(self.newsilence)
-        self.assertEquals('ID3', open(self.newsilence).read(3))
+        self.assertEquals(b'ID3', open(self.newsilence, 'fb').read(3))
         self.test_same()
 
     def test_empty_plustag_minustag_empty(self):
@@ -1545,9 +1545,9 @@ class WriteRoundtrip(TestCase):
         self.assertEquals(open(self.newsilence).read(10), '')
 
     def test_delete_invalid_zero(self):
-        open(self.newsilence, 'wb').write('ID3\x04\x00\x00\x00\x00\x00\x00abc')
+        open(self.newsilence, 'wb').write(b'ID3\x04\x00\x00\x00\x00\x00\x00abc')
         ID3(self.newsilence).delete()
-        self.assertEquals(open(self.newsilence).read(10), 'abc')
+        self.assertEquals(open(self.newsilence, 'rb').read(10), b'abc')
 
     def test_frame_order(self):
         from mutagen.id3 import TIT2, APIC, TALB, COMM

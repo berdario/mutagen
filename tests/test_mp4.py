@@ -233,7 +233,7 @@ class TMP4(TestCase):
         self.failIf(value and value != NOTFOUND)
 
     def test_score(self):
-        fileobj = open(self.filename)
+        fileobj = open(self.filename, 'rb')
         header = fileobj.read(128)
         self.failUnless(MP4.score(self.filename, fileobj, header))
 
@@ -568,14 +568,14 @@ class TMP4UpdateParents64Bit(TestCase):
         shutil.copy(self.original, self.filename)
 
     def test_update_parents(self):
-        file = open(self.filename)
+        file = open(self.filename, 'rb')
         atoms = Atoms(file)
         self.assertEqual(77, atoms.atoms[0].length)
         self.assertEqual(61, atoms.atoms[0].children[0].length)
         tags = MP4Tags(atoms, file)
         tags['pgap'] = True
         tags.save(self.filename)
-        file = open(self.filename)
+        file = open(self.filename, 'rb')
         atoms = Atoms(file)
         # original size + 'pgap' size + padding
         self.assertEqual(77 + 25 + 974, atoms.atoms[0].length)

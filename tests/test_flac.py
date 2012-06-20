@@ -229,7 +229,7 @@ class TFLAC(TestCase):
     def test_write_nochange(self):
         f = FLAC(self.NEW)
         f.save()
-        self.failUnlessEqual(open(self.SAMPLE).read(), open(self.NEW).read())
+        self.failUnlessEqual(open(self.SAMPLE, 'rb').read(), open(self.NEW, 'rb').read())
 
     def test_write_changetitle(self):
         f = FLAC(self.NEW)
@@ -307,7 +307,7 @@ class TFLAC(TestCase):
         flac = FLAC(self.NEW)
         self.failUnlessEqual(len(flac.metadata_blocks), 7)
         self.failUnlessEqual(flac.metadata_blocks[5].code, 99)
-        self.failUnlessEqual(flac.metadata_blocks[5].data, "test block data")
+        self.failUnlessEqual(flac.metadata_blocks[5].data, b"test block data")
 
     def test_two_vorbis_blocks(self):
         self.flac.metadata_blocks.append(self.flac.metadata_blocks[1])
