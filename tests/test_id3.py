@@ -152,7 +152,7 @@ class ID3Loading(TestCase):
     def test_header_2_3_extended(self):
         id3 = ID3()
         id3._ID3__fileobj = BytesIO(
-            'ID3\x03\x00\x40\x00\x00\x00\x00\x00\x00\x00\x06'
+            b'ID3\x03\x00\x40\x00\x00\x00\x00\x00\x00\x00\x06'
             b'\x00\x00\x56\x78\x9a\xbc')
         id3._ID3__load_header()
         self.assertEquals(id3._ID3__extsize, 6)
@@ -595,7 +595,7 @@ def TestReadTags():
      dict(owner='a@b.org', group=0x99, data='data')],
 
     ['COMR', b'\x00USD10.00\x0020051010ql@sc.net\x00\x09Joe\x00A song\x00'
-     'x-image/fake\x00some data',
+     b'x-image/fake\x00some data',
      COMR(encoding=0, price="USD10.00", valid_until="20051010",
           contact="ql@sc.net", format=9, seller="Joe", desc="A song",
           mime='x-image/fake', logo='some data'), '',
@@ -995,7 +995,7 @@ class FrameSanityChecks(TestCase):
     def test_zlib_latin1(self):
         from mutagen.id3 import TPE1
         tag = TPE1.fromData(_24, 0x9, b'\x00\x00\x00\x0f'
-                'x\x9cc(\xc9\xc8,V\x00\xa2D\xfd\x92\xd4\xe2\x12\x00&\x7f\x05%')
+                b'x\x9cc(\xc9\xc8,V\x00\xa2D\xfd\x92\xd4\xe2\x12\x00&\x7f\x05%')
         self.assertEquals(tag.encoding, 0)
         self.assertEquals(tag, ['this is a/test'])
 
@@ -1330,7 +1330,7 @@ class BrokenButParsed(TestCase):
 
     def test_ql_0_12_missing_uncompressed_size(self):
         from mutagen.id3 import TPE1
-        tag = TPE1.fromData(_24, 0x08, 'x\x9cc\xfc\xff\xaf\x84!\x83!\x93'
+        tag = TPE1.fromData(_24, 0x08, b'x\x9cc\xfc\xff\xaf\x84!\x83!\x93'
                 b'\xa1\x98A\x01J&2\xe83\x940\xa4\x02\xd9%\x0c\x00\x87\xc6\x07#')
         self.assertEquals(tag.encoding, 1)
         self.assertEquals(tag, ['this is a/test'])
@@ -1338,7 +1338,7 @@ class BrokenButParsed(TestCase):
     def test_zlib_latin1_missing_datalen(self):
         from mutagen.id3 import TPE1
         tag = TPE1.fromData(_24, 0x8, b'\x00\x00\x00\x0f'
-                'x\x9cc(\xc9\xc8,V\x00\xa2D\xfd\x92\xd4\xe2\x12\x00&\x7f\x05%')
+                b'x\x9cc(\xc9\xc8,V\x00\xa2D\xfd\x92\xd4\xe2\x12\x00&\x7f\x05%')
         self.assertEquals(tag.encoding, 0)
         self.assertEquals(tag, ['this is a/test'])
 

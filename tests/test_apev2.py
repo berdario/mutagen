@@ -25,7 +25,7 @@ class Tis_valid_apev2_key(TestCase):
             self.failUnless(is_valid_apev2_key(key))
 
     def test_no(self):
-        for key in [b"\x11hi", "ffoo\xFF", "\u1234", "a", "", "foo" * 100]:
+        for key in ["\x11hi", "ffoo\xFF", "\u1234", "a", "", "foo" * 100]:
             self.failIf(is_valid_apev2_key(key))
 add(Tis_valid_apev2_key)
 
@@ -280,7 +280,7 @@ class TAPEBinaryValue(TestCase):
         self.failUnless(isinstance(self.value, self.BV))
 
     def test_const(self):
-        self.failUnlessEqual(self.sample, str(self.value))
+        self.failUnlessEqual(str(self.sample), str(self.value))
 
     def test_repr(self):
         repr(self.value)
