@@ -439,7 +439,7 @@ class Picture(MetadataBlock):
         self.height = 0
         self.depth = 0
         self.colors = 0
-        self.data = ''
+        self.data = b''
         super(Picture, self).__init__(data)
 
     def __eq__(self, other):

@@ -362,8 +362,7 @@ class ID3(DictProxy, mutagen.Metadata):
         order = dict(list(zip(order, list(range(len(order))))))
         last = len(order)
         frames = list(self.items())
-        frames.sort(lambda a, b: cmp(order.get(a[0][:4], last),
-                                     order.get(b[0][:4], last)))
+        frames.sort(key=lambda a: order.get(a[0][:4], last))
 
         framedata = [self.__save_frame(frame) for (key, frame) in frames]
         framedata.extend([data for data in self.unknown_frames
@@ -707,8 +706,8 @@ class EncodedTextSpec(Spec):
     # Okay, seriously. This is private and defined explicitly and
     # completely by the ID3 specification. You can't just add
     # encodings here however you want.
-    _encodings = ( ('latin1', '\x00'), ('utf16', '\x00\x00'),
-                   ('utf_16_be', '\x00\x00'), ('utf8', '\x00') )
+    _encodings = ( ('latin1', b'\x00'), ('utf16', b'\x00\x00'),
+                   ('utf_16_be', b'\x00\x00'), ('utf8', b'\x00') )
 
     def read(self, frame, data):
         enc, term = self._encodings[frame.encoding]
@@ -760,7 +759,7 @@ class MultiSpec(Spec):
             for record in value:
                 for v, s in zip(record, self.specs):
                     data.append(s.write(frame, v))
-        return ''.join(data)
+        return b''.join(data)
 
     def validate(self, frame, value):
         if value is None: return []
@@ -1040,7 +1039,7 @@ class Frame(object):
         data = []
         for writer in self._framespec:
             data.append(writer.write(self, getattr(self, writer.name)))
-        return ''.join(data)
+        return b''.join(data)
 
     def pprint(self):
         """Return a human-readable representation of the frame."""
@@ -1168,8 +1167,7 @@ class TextFrame(Frame):
 
     _framespec = [ EncodingSpec('encoding'),
         MultiSpec('text', EncodedTextSpec('text'), sep='\u0000') ]
-    def __str__(self): return self.__unicode__().encode('utf-8')
-    def __unicode__(self): return '\u0000'.join(self.text)
+    def __str__(self): return '\u0000'.join(self.text)
     def __eq__(self, other):
         if isinstance(other, str): return str(self) == other
         elif isinstance(other, str): return str(self) == other

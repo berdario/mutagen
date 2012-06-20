@@ -212,7 +212,7 @@ def insert_bytes(fobj, size, offset, BUFFER_SIZE=2**16):
     fobj.seek(0, 2)
     filesize = fobj.tell()
     movesize = filesize - offset
-    fobj.write('\x00' * size)
+    fobj.write(b'\x00' * size)
     fobj.flush()
     try:
         try:
