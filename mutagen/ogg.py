@@ -20,7 +20,7 @@ import struct
 import sys
 import zlib
 
-from io import StringIO
+from io import BytesIO
 
 from mutagen import FileType
 from mutagen._util import cdata, insert_bytes, delete_bytes
@@ -397,7 +397,7 @@ class OggPage(object):
         try: index = data.rindex("OggS")
         except ValueError:
             raise error("unable to find final Ogg header")
-        stringobj = StringIO(data[index:])
+        stringobj = BytesIO(data[index:])
         best_page = None
         try:
             page = OggPage(stringobj)

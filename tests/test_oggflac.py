@@ -3,7 +3,7 @@ import shutil
 import sys
 
 from tempfile import mkstemp
-from io import StringIO
+from io import BytesIO
 
 from mutagen.oggflac import OggFLAC, OggFLACStreamInfo, delete
 from mutagen.ogg import OggPage
@@ -30,12 +30,12 @@ class TOggFLAC(TOggFileType):
     def test_streaminfo_bad_marker(self):
         page = OggPage(open(self.filename, "rb")).write()
         page = page.replace("fLaC", "!fLa", 1)
-        self.failUnlessRaises(IOError, OggFLACStreamInfo, StringIO(page))
+        self.failUnlessRaises(IOError, OggFLACStreamInfo, BytesIO(page))
 
     def test_streaminfo_bad_version(self):
         page = OggPage(open(self.filename, "rb")).write()
         page = page.replace(b"\x01\x00", b"\x02\x00", 1)
-        self.failUnlessRaises(IOError, OggFLACStreamInfo, StringIO(page))
+        self.failUnlessRaises(IOError, OggFLACStreamInfo, BytesIO(page))
 
     def test_flac_reference_simple_save(self):
         if not have_flac: return

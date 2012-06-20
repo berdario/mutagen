@@ -1,5 +1,5 @@
 import os
-from io import StringIO
+from io import BytesIO
 
 from tests import TestCase, add
 from mutagen import File, Metadata, FileType
@@ -175,7 +175,7 @@ class TFile(TestCase):
 
     def test_id3_indicates_mp3_not_tta(self):
         header = "ID3 the rest of this is garbage"
-        fileobj = StringIO(header)
+        fileobj = BytesIO(header)
         filename = "not-identifiable.ext"
         self.failUnless(TrueAudio.score(filename, fileobj, header) <
                         MP3.score(filename, fileobj, header))

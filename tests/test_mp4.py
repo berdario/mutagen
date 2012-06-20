@@ -2,7 +2,7 @@ import os
 import shutil
 import struct
 
-from io import StringIO
+from io import BytesIO
 from tempfile import mkstemp
 from tests import TestCase, add
 from mutagen.mp4 import MP4, Atom, Atoms, MP4Tags, MP4Info, \
@@ -15,12 +15,12 @@ class TAtom(TestCase):
     uses_mmap = False
 
     def test_no_children(self):
-        fileobj = StringIO(b"\x00\x00\x00\x08atom")
+        fileobj = BytesIO(b"\x00\x00\x00\x08atom")
         atom = Atom(fileobj)
         self.failUnlessRaises(KeyError, atom.__getitem__, "test")
 
     def test_length_1(self):
-        fileobj = StringIO(b"\x00\x00\x00\x01atom"
+        fileobj = BytesIO(b"\x00\x00\x00\x01atom"
                            b"\x00\x00\x00\x00\x00\x00\x00\x08" + b"\x00" * 8)
         self.failUnlessEqual(Atom(fileobj).length, 8)
 
@@ -38,7 +38,7 @@ class TAtom(TestCase):
             self.failUnlessEqual(len(data), 4 + 4 + 8 + 4)
 
     def test_length_0(self):
-        fileobj = StringIO(b"\x00\x00\x00\x00atom")
+        fileobj = BytesIO(b"\x00\x00\x00\x00atom")
         Atom(fileobj)
         self.failUnlessEqual(fileobj.tell(), 8)
 add(TAtom)
@@ -65,7 +65,7 @@ class TAtoms(TestCase):
         self.failUnless(self.atoms.atoms[0].children is None)
 
     def test_extra_trailing_data(self):
-        data = StringIO(Atom.render("data", "whee") + b"\x00\x00")
+        data = BytesIO(Atom.render("data", "whee") + b"\x00\x00")
         self.failUnless(Atoms(data))
 
     def test_repr(self):
@@ -87,7 +87,7 @@ class TMP4Info(TestCase):
         mdia = Atom.render("mdia", mdhd + hdlr)
         trak = Atom.render("trak", mdia)
         moov = Atom.render("moov", trak)
-        fileobj = StringIO(moov)
+        fileobj = BytesIO(moov)
         atoms = Atoms(fileobj)
         info = MP4Info(atoms, fileobj)
         self.failUnlessEqual(info.length, 8)
@@ -103,7 +103,7 @@ class TMP4Info(TestCase):
         mdia = Atom.render("mdia", mdhd + hdlr)
         trak2 = Atom.render("trak", mdia)
         moov = Atom.render("moov", trak1 + trak2)
-        fileobj = StringIO(moov)
+        fileobj = BytesIO(moov)
         atoms = Atoms(fileobj)
         info = MP4Info(atoms, fileobj)
         self.failUnlessEqual(info.length, 8)
@@ -116,7 +116,7 @@ class TMP4Tags(TestCase):
         ilst = Atom.render("ilst", data)
         meta = Atom.render("meta", b"\x00" * 4 + ilst)
         data = Atom.render("moov", Atom.render("udta", meta))
-        fileobj = StringIO(data)
+        fileobj = BytesIO(data)
         return MP4Tags(Atoms(fileobj), fileobj)
 
     def test_genre(self):

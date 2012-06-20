@@ -2,7 +2,7 @@ import os
 import shutil
 import sys
 
-from io import StringIO
+from io import BytesIO
 from mutagen.ogg import OggPage
 from mutagen.oggspeex import OggSpeex, OggSpeexInfo, delete
 from tests import TestCase, add
@@ -36,7 +36,7 @@ class TOggSpeex(TOggFileType):
     def test_invalid_not_first(self):
         page = OggPage(open(self.filename, "rb"))
         page.first = False
-        self.failUnlessRaises(IOError, OggSpeexInfo, StringIO(page.write()))
+        self.failUnlessRaises(IOError, OggSpeexInfo, BytesIO(page.write()))
 
     def test_vendor(self):
         self.failUnless(

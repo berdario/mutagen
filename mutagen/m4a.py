@@ -25,7 +25,7 @@ work on metadata over 4GB.
 import struct
 import sys
 
-from io import StringIO
+from io import BytesIO
 
 from mutagen import FileType, Metadata
 from mutagen._constants import GENRES
@@ -313,7 +313,7 @@ class M4ATags(DictProxy, Metadata):
 
     def __parse_freeform(self, atom, data):
         try:
-            fileobj = StringIO(data)
+            fileobj = BytesIO(data)
             mean_length = cdata.uint_be(fileobj.read(4))
             # skip over 8 bytes of atom name, flags
             mean = fileobj.read(mean_length - 4)[8:]

@@ -21,7 +21,7 @@ __all__ = ["OggFLAC", "Open", "delete"]
 
 import struct
 
-from io import StringIO
+from io import BytesIO
 
 from mutagen.flac import StreamInfo, VCFLACDict
 from mutagen.ogg import OggPage, OggFileType, error as OggError
@@ -57,8 +57,8 @@ class OggFLACStreamInfo(StreamInfo):
         self.serial = page.serial
 
         # Skip over the block header.
-        stringobj = StringIO(page.packets[0][17:])
-        super(OggFLACStreamInfo, self).load(StringIO(page.packets[0][17:]))
+        stringobj = BytesIO(page.packets[0][17:])
+        super(OggFLACStreamInfo, self).load(BytesIO(page.packets[0][17:]))
 
     def pprint(self):
         return "Ogg " + super(OggFLACStreamInfo, self).pprint()
@@ -74,7 +74,7 @@ class OggFLACVComment(VCFLACDict):
             if page.serial == info.serial:
                 pages.append(page)
                 complete = page.complete or (len(page.packets) > 1)
-        comment = StringIO(OggPage.to_packets(pages)[0][4:])
+        comment = BytesIO(OggPage.to_packets(pages)[0][4:])
         super(OggFLACVComment, self).load(comment, errors=errors)
 
     def _inject(self, fileobj):

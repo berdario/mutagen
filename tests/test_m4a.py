@@ -1,7 +1,7 @@
 import os
 import shutil
 
-from io import StringIO
+from io import BytesIO
 from tempfile import mkstemp
 from tests import TestCase, add
 
@@ -17,12 +17,12 @@ class TAtom(TestCase):
     uses_mmap = False
 
     def test_no_children(self):
-        fileobj = StringIO(b"\x00\x00\x00\x08atom")
+        fileobj = BytesIO(b"\x00\x00\x00\x08atom")
         atom = Atom(fileobj)
         self.failUnlessRaises(KeyError, atom.__getitem__, "test")
 
     def test_length_1(self):
-        fileobj = StringIO(b"\x00\x00\x00\x01atom" + b"\x00" * 8)
+        fileobj = BytesIO(b"\x00\x00\x00\x01atom" + b"\x00" * 8)
         self.failUnlessRaises(IOError, Atom, fileobj)
 
     def test_render_too_big(self):
@@ -39,7 +39,7 @@ class TAtom(TestCase):
             self.failUnlessEqual(len(data), 4 + 4 + 8 + 4)
 
     def test_length_0(self):
-        fileobj = StringIO(b"\x00\x00\x00\x00atom")
+        fileobj = BytesIO(b"\x00\x00\x00\x00atom")
         Atom(fileobj)
         self.failUnlessEqual(fileobj.tell(), 8)
 add(TAtom)
@@ -84,7 +84,7 @@ class TM4AInfo(TestCase):
         mdia = Atom.render("mdia", mdhd + hdlr)
         trak = Atom.render("trak", mdia)
         moov = Atom.render("moov", trak)
-        fileobj = StringIO(moov)
+        fileobj = BytesIO(moov)
         atoms = Atoms(fileobj)
         info = M4AInfo(atoms, fileobj)
         self.failUnlessEqual(info.length, 8)
@@ -97,7 +97,7 @@ class TM4ATags(TestCase):
         ilst = Atom.render("ilst", data)
         meta = Atom.render("meta", b"\x00" * 4 + ilst)
         data = Atom.render("moov", Atom.render("udta", meta))
-        fileobj = StringIO(data)
+        fileobj = BytesIO(data)
         return M4ATags(Atoms(fileobj), fileobj)
         
     def test_bad_freeform(self):
