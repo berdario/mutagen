@@ -22,7 +22,8 @@ http://flac.sourceforge.net/format.html
 __all__ = ["FLAC", "Open", "delete"]
 
 import struct
-from io import StringIO
+from io import BytesIO
+from codecs import raw_unicode_escape_encode as raw_encode
 from ._vorbis import VCommentDict
 from mutagen import FileType
 from mutagen._util import insert_bytes
@@ -54,7 +55,7 @@ class MetadataBlock(object):
         """Parse the given data string or file-like as a metadata block.
         The metadata header should not be included."""
         if data is not None:
-            if isinstance(data, str): data = StringIO(data)
+            if isinstance(data, str): data = BytesIO(data.encode())
             elif not hasattr(data, 'read'):
                 raise TypeError(
                     "StreamInfo requires string data or a file-like")
@@ -69,12 +70,12 @@ class MetadataBlock(object):
         codes = [[block.code, block.write()] for block in blocks]
         codes[-1][0] |= 128
         for code, datum in codes:
-            byte = chr(code)
+            byte = raw_encode(chr(code))[0]
             if len(datum) > 2**24:
                 raise error("block is too long to write")
             length = struct.pack(">I", len(datum))[-3:]
             data.append(byte + length + datum)
-        return "".join(data)
+        return b"".join(data)
     writeblocks = staticmethod(writeblocks)
 
     def group_padding(blocks):
@@ -147,7 +148,7 @@ class StreamInfo(MetadataBlock):
         self.md5_signature = to_int_be(data.read(16))
 
     def write(self):
-        f = StringIO()
+        f = BytesIO()
         f.write(struct.pack(">I", self.min_blocksize)[-2:])
         f.write(struct.pack(">I", self.max_blocksize)[-2:])
         f.write(struct.pack(">I", self.min_framesize)[-3:])
@@ -229,7 +230,7 @@ class SeekTable(MetadataBlock):
             sp = data.read(self.__SEEKPOINT_SIZE)
 
     def write(self):
-        f = StringIO()
+        f = BytesIO()
         for seekpoint in self.seekpoints:
             packed = struct.pack(self.__SEEKPOINT_FORMAT,
                 seekpoint.first_sample, seekpoint.byte_offset,
@@ -384,7 +385,7 @@ class CueSheet(MetadataBlock):
             self.tracks.append(val)
             
     def write(self):
-        f = StringIO()
+        f = BytesIO()
         flags = 0
         if self.compact_disc: flags |= 0x80
         packed = struct.pack(
@@ -463,7 +464,7 @@ class Picture(MetadataBlock):
         self.data = data.read(length)
 
     def write(self):
-        f = StringIO()
+        f = BytesIO()
         mime = self.mime.encode('UTF-8')
         f.write(struct.pack('>2I', self.type, len(mime)))
         f.write(mime)
@@ -493,7 +494,7 @@ class Padding(MetadataBlock):
     def __init__(self, data=""): super(Padding, self).__init__(data)
     def load(self, data): self.length = len(data.read())
     def write(self):
-        try: return "\x00" * self.length
+        try: return b"\x00" * self.length
         # On some 64 bit platforms this won't generate a MemoryError
         # or OverflowError since you might have enough RAM, but it
         # still generates a ValueError. On other 64 bit platforms,

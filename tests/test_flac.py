@@ -25,16 +25,16 @@ class TVCFLACDict(TVCommentDict):
     Kind = VCFLACDict
 
     def test_roundtrip_vc(self):
-        self.failUnlessEqual(self.c, VComment(self.c.write() + "\x01"))
+        self.failUnlessEqual(self.c, VComment(self.c.write() + b"\x01"))
 add(TVCFLACDict)
 
 class TMetadataBlock(TestCase):
     uses_mmap = False
 
     def test_empty(self):
-        self.failUnlessEqual(MetadataBlock("").write(), "")
+        self.failUnlessEqual(MetadataBlock("").write(), b"")
     def test_not_empty(self):
-        self.failUnlessEqual(MetadataBlock("foobar").write(), "foobar")
+        self.failUnlessEqual(MetadataBlock("foobar").write(), b"foobar")
 
     def test_change(self):
         b = MetadataBlock("foobar")
