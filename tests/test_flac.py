@@ -11,12 +11,12 @@ except ImportError: devnull = "/dev/null"
 class Tto_int_be(TestCase):
     uses_mmap = False
 
-    def test_empty(self): self.failUnlessEqual(to_int_be(""), 0)
-    def test_0(self): self.failUnlessEqual(to_int_be("\x00"), 0)
-    def test_1(self): self.failUnlessEqual(to_int_be("\x01"), 1)
-    def test_256(self): self.failUnlessEqual(to_int_be("\x01\x00"), 256)
+    def test_empty(self): self.failUnlessEqual(to_int_be(b""), 0)
+    def test_0(self): self.failUnlessEqual(to_int_be(b"\x00"), 0)
+    def test_1(self): self.failUnlessEqual(to_int_be(b"\x01"), 1)
+    def test_256(self): self.failUnlessEqual(to_int_be(b"\x01\x00"), 256)
     def test_long(self):
-        self.failUnlessEqual(to_int_be("\x01\x00\x00\x00\x00"), 2**32)
+        self.failUnlessEqual(to_int_be(b"\x01\x00\x00\x00\x00"), 2**32)
 add(Tto_int_be)
 
 class TVCFLACDict(TVCommentDict):
@@ -62,8 +62,8 @@ add(TMetadataBlock)
 class TStreamInfo(TestCase):
     uses_mmap = False
 
-    data = ('\x12\x00\x12\x00\x00\x00\x0e\x005\xea\n\xc4H\xf0\x00\xca0'
-            '\x14(\x90\xf9\xe1)2\x13\x01\xd4\xa7\xa9\x11!8\xab\x91')
+    data = (b'\x12\x00\x12\x00\x00\x00\x0e\x005\xea\n\xc4H\xf0\x00\xca0'
+            b'\x14(\x90\xf9\xe1)2\x13\x01\xd4\xa7\xa9\x11!8\xab\x91')
 
     def setUp(self):
         self.i = StreamInfo(self.data)
@@ -120,21 +120,21 @@ class TCueSheet(TestCase):
         self.flac = FLAC(self.SAMPLE)
         self.cs = self.flac.cuesheet
     def test_cuesheet(self):
-        self.failUnlessEqual(self.cs.media_catalog_number, "1234567890123")
+        self.failUnlessEqual(int(self.cs.media_catalog_number), 1234567890123)
         self.failUnlessEqual(self.cs.lead_in_samples, 88200)
         self.failUnlessEqual(self.cs.compact_disc, True)
         self.failUnlessEqual(len(self.cs.tracks), 4)
     def test_first_track(self):
         self.failUnlessEqual(self.cs.tracks[0].track_number, 1)
         self.failUnlessEqual(self.cs.tracks[0].start_offset, 0)
-        self.failUnlessEqual(self.cs.tracks[0].isrc, '123456789012')
+        self.failUnlessEqual(int(self.cs.tracks[0].isrc), 123456789012)
         self.failUnlessEqual(self.cs.tracks[0].type, 0)
         self.failUnlessEqual(self.cs.tracks[0].pre_emphasis, False)
         self.failUnlessEqual(self.cs.tracks[0].indexes, [(1, 0)])
     def test_second_track(self):
         self.failUnlessEqual(self.cs.tracks[1].track_number, 2)
         self.failUnlessEqual(self.cs.tracks[1].start_offset, 44100)
-        self.failUnlessEqual(self.cs.tracks[1].isrc, '')
+        self.failUnlessEqual(self.cs.tracks[1].isrc, b'')
         self.failUnlessEqual(self.cs.tracks[1].type, 1)
         self.failUnlessEqual(self.cs.tracks[1].pre_emphasis, True)
         self.failUnlessEqual(self.cs.tracks[1].indexes, [(1, 0),
@@ -142,7 +142,7 @@ class TCueSheet(TestCase):
     def test_lead_out(self):
         self.failUnlessEqual(self.cs.tracks[-1].track_number, 170)
         self.failUnlessEqual(self.cs.tracks[-1].start_offset, 162496)
-        self.failUnlessEqual(self.cs.tracks[-1].isrc, '')
+        self.failUnlessEqual(self.cs.tracks[-1].isrc, b'')
         self.failUnlessEqual(self.cs.tracks[-1].type, 0)
         self.failUnlessEqual(self.cs.tracks[-1].pre_emphasis, False)
         self.failUnlessEqual(self.cs.tracks[-1].indexes, [])
@@ -181,14 +181,14 @@ add(TPicture)
 class TPadding(TestCase):
     uses_mmap = False
 
-    def setUp(self): self.b = Padding("\x00" * 100)
-    def test_padding(self): self.failUnlessEqual(self.b.write(), "\x00" * 100)
+    def setUp(self): self.b = Padding(b"\x00" * 100)
+    def test_padding(self): self.failUnlessEqual(self.b.write(), b"\x00" * 100)
     def test_blank(self): self.failIf(Padding().write())
-    def test_empty(self): self.failIf(Padding("").write())
+    def test_empty(self): self.failIf(Padding(b"").write())
     def test_repr(self): repr(Padding())
     def test_change(self):
         self.b.length = 20
-        self.failUnlessEqual(self.b.write(), "\x00" * 20)
+        self.failUnlessEqual(self.b.write(), b"\x00" * 20)
 add(TPadding)
 
 class TFLAC(TestCase):
@@ -196,7 +196,7 @@ class TFLAC(TestCase):
     NEW = SAMPLE + ".new"
     def setUp(self):
         shutil.copy(self.SAMPLE, self.NEW)
-        self.failUnlessEqual(open(self.SAMPLE).read(), open(self.NEW).read())
+        self.failUnlessEqual(open(self.SAMPLE, 'rb').read(), open(self.NEW, 'rb').read())
         self.flac = FLAC(self.NEW)
 
     def test_delete(self):

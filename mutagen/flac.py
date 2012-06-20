@@ -21,16 +21,15 @@ http://flac.sourceforge.net/format.html
 
 __all__ = ["FLAC", "Open", "delete"]
 
+import sys
 import struct
 from io import BytesIO
 from codecs import raw_unicode_escape_encode as raw_encode
+from functools import reduce
 from ._vorbis import VCommentDict
 from mutagen import FileType
 from mutagen._util import insert_bytes
 from mutagen.id3 import BitPaddedInt
-import sys
-if sys.version_info >= (2, 6):
-    from functools import reduce
 
 class error(IOError): pass
 class FLACNoHeaderError(error): pass
@@ -39,7 +38,7 @@ class FLACVorbisError(ValueError, error): pass
 def to_int_be(string):
     """Convert an arbitrarily-long string to a long using big-endian
     byte order."""
-    return reduce(lambda a, b: (a << 8) + ord(b), string, 0)
+    return reduce(lambda a, b: (a << 8) + b, string, 0)
 
 class MetadataBlock(object):
     """A generic block of FLAC metadata.
@@ -56,6 +55,7 @@ class MetadataBlock(object):
         The metadata header should not be included."""
         if data is not None:
             if isinstance(data, str): data = BytesIO(data.encode())
+            elif isinstance(data, bytes): data = BytesIO(data)
             elif not hasattr(data, 'read'):
                 raise TypeError(
                     "StreamInfo requires string data or a file-like")
@@ -160,11 +160,11 @@ class StreamInfo(MetadataBlock):
         byte = (self.sample_rate & 0xF) << 4
         byte += ((self.channels - 1) & 7) << 1
         byte += ((self.bits_per_sample - 1) >> 4) & 1
-        f.write(chr(byte))
+        f.write(raw_encode(chr(byte))[0])
         # 4 bits of bps, 4 of sample count
         byte = ((self.bits_per_sample - 1) & 0xF)  << 4
         byte += (self.total_samples >> 32) & 0xF
-        f.write(chr(byte))
+        f.write(raw_encode(chr(byte))[0])
         # last 32 of sample count
         f.write(struct.pack(">I", self.total_samples & 0xFFFFFFFF))
         # MD5 signature
@@ -342,7 +342,7 @@ class CueSheet(MetadataBlock):
 
     code = 5
 
-    media_catalog_number = ''
+    media_catalog_number = b''
     lead_in_samples = 88200
     compact_disc = True
 
@@ -363,7 +363,7 @@ class CueSheet(MetadataBlock):
         header = data.read(self.__CUESHEET_SIZE)
         media_catalog_number, lead_in_samples, flags, num_tracks = \
             struct.unpack(self.__CUESHEET_FORMAT, header)
-        self.media_catalog_number = media_catalog_number.rstrip('\0')
+        self.media_catalog_number = media_catalog_number.rstrip(b'\0')
         self.lead_in_samples = lead_in_samples
         self.compact_disc = bool(flags & 0x80)
         self.tracks = []
@@ -371,7 +371,7 @@ class CueSheet(MetadataBlock):
             track = data.read(self.__CUESHEET_TRACK_SIZE)
             start_offset, track_number, isrc_padded, flags, num_indexes = \
                 struct.unpack(self.__CUESHEET_TRACK_FORMAT, track)
-            isrc = isrc_padded.rstrip('\0')
+            isrc = isrc_padded.rstrip(b'\0')
             type_ = (flags & 0x80) >> 7
             pre_emphasis = bool(flags & 0x40)
             val = CueSheetTrack(
@@ -527,7 +527,7 @@ class FLAC(FileType):
     """Known metadata block types, indexed by ID."""
 
     def score(filename, fileobj, header):
-        return (header.startswith("fLaC") +
+        return (header.startswith(b"fLaC") +
                 filename.lower().endswith(".flac") * 3)
     score = staticmethod(score)
 
@@ -641,7 +641,7 @@ class FLAC(FileType):
 
         # Ensure we've got padding at the end, and only at the end.
         # If adding makes it too large, we'll scale it down later.
-        self.metadata_blocks.append(Padding('\x00' * 1020))
+        self.metadata_blocks.append(Padding(b'\x00' * 1020))
         MetadataBlock.group_padding(self.metadata_blocks)
 
         header = self.__check_header(f)
@@ -674,14 +674,14 @@ class FLAC(FileType):
             insert_bytes(f, diff, header)
 
         f.seek(header - 4)
-        f.write("fLaC" + data)
+        f.write(b"fLaC" + data)
 
         # Delete ID3v1
         if deleteid3:
             try: f.seek(-128, 2)
             except IOError: pass
             else:
-                if f.read(3) == "TAG":
+                if f.read(3) == b"TAG":
                     f.seek(-128, 2)
                     f.truncate()
 
@@ -701,12 +701,12 @@ class FLAC(FileType):
     def __check_header(self, fileobj):
         size = 4
         header = fileobj.read(4)
-        if header != "fLaC":
+        if header != b"fLaC":
             size = None
-            if header[:3] == "ID3":
+            if header[:3] == b"ID3":
                 size = 14 + BitPaddedInt(fileobj.read(6)[2:])
                 fileobj.seek(size - 4)
-                if fileobj.read(4) != "fLaC": size = None
+                if fileobj.read(4) != b"fLaC": size = None
         if size is None:
             raise FLACNoHeaderError(
                 "%r is not a valid FLAC file" % fileobj.name)
