@@ -206,8 +206,8 @@ class MPEGInfo(object):
                 samples = float(frame_size * frame_count)
                 self.length = (samples / self.sample_rate) or self.length
             if flags & 0x2:
-                bytes = struct.unpack('>I', data[xing + 12:xing + 16])[0]
-                self.bitrate = int((bytes * 8) // self.length)
+                byte = struct.unpack('>I', data[xing + 12:xing + 16])[0]
+                self.bitrate = int((byte * 8) // self.length)
 
         # If the bitrate * the length is nowhere near the file
         # length, recalculate using the bitrate and file length.

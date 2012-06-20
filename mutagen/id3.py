@@ -35,6 +35,7 @@ import struct
 from struct import unpack, pack, error as StructError
 from zlib import error as zlibError
 from warnings import warn
+from codecs import raw_unicode_escape_encode as raw_encode
 
 import mutagen
 from mutagen._util import insert_bytes, delete_bytes, DictProxy
@@ -569,15 +570,15 @@ class BitPaddedInt(int):
         "Strips 8-bits bits out of every byte"
         mask = (1<<(bits))-1
         if isinstance(value, int):
-            bytes = []
+            bytelist = []
             while value:
-                bytes.append(value & ((1<<bits)-1))
+                bytelist.append(value & ((1<<bits)-1))
                 value = value >> 8
         if isinstance(value, str):
-            bytes = [ord(byte) & mask for byte in value]
-            if bigendian: bytes.reverse()
+            bytelist = [ord(byte) & mask for byte in value]
+            if bigendian: bytelist.reverse()
         numeric_value = 0
-        for shift, byte in zip(list(range(0, len(bytes)*bits, bits)), bytes):
+        for shift, byte in zip(list(range(0, len(bytelist)*bits, bits)), bytelist):
             numeric_value += byte << shift
         if isinstance(numeric_value, int):
             self = int.__new__(BitPaddedLong, numeric_value)
@@ -592,17 +593,17 @@ class BitPaddedInt(int):
         bigendian = getattr(value, 'bigendian', bigendian)
         value = int(value)
         mask = (1<<bits)-1
-        bytes = []
+        bytelist = []
         while value:
-            bytes.append(value & mask)
+            bytelist.append(value & mask)
             value = value >> bits
         # PCNT and POPM use growing integers of at least 4 bytes as counters.
-        if width == -1: width = max(4, len(bytes))
-        if len(bytes) > width:
-            raise ValueError('Value too wide (%d bytes)' % len(bytes))
-        else: bytes.extend([0] * (width-len(bytes)))
-        if bigendian: bytes.reverse()
-        return ''.join(map(chr, bytes))
+        if width == -1: width = max(4, len(bytelist))
+        if len(bytelist) > width:
+            raise ValueError('Value too wide (%d bytelist)' % len(bytelist))
+        else: bytelist.extend([0] * (width-len(bytelist)))
+        if bigendian: bytelist.reverse()
+        return bytes(bytelist)
     to_str = staticmethod(as_str)
 
 class BitPaddedLong(int):
@@ -652,7 +653,7 @@ class Spec(object):
 
 class ByteSpec(Spec):
     def read(self, frame, data): return ord(data[0]), data[1:]
-    def write(self, frame, value): return chr(value)
+    def write(self, frame, value): return raw_encode(chr(value))[0]
     def validate(self, frame, value): return value
 
 class IntegerSpec(Spec):
@@ -862,15 +863,15 @@ class VolumePeakSpec(Spec):
         # http://bugs.xmms.org/attachment.cgi?id=113&action=view
         peak = 0
         bits = ord(data[0])
-        bytes = min(4, (bits + 7) >> 3)
+        byte = min(4, (bits + 7) >> 3)
         # not enough frame data
-        if bytes + 1 > len(data): raise ID3JunkFrameError
-        shift = ((8 - (bits & 7)) & 7) + (4 - bytes) * 8
-        for i in range(1, bytes+1):
+        if byte + 1 > len(data): raise ID3JunkFrameError
+        shift = ((8 - (bits & 7)) & 7) + (4 - byte) * 8
+        for i in range(1, byte+1):
             peak *= 256
             peak += ord(data[i])
         peak *= 2**shift
-        return (float(peak) / (2**31-1)), data[1+bytes:]
+        return (float(peak) / (2**31-1)), data[1+byte:]
 
     def write(self, frame, value):
         # always write as 16 bits for sanity.
