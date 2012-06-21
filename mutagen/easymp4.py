@@ -199,18 +199,18 @@ for atomid, key in list({
     b'\xa9nam': 'title',
     b'\xa9alb': 'album',
     b'\xa9ART': 'artist',
-    'aART': 'albumartist',
+    b'aART': 'albumartist',
     b'\xa9day': 'date',
     b'\xa9cmt': 'comment',
-    'desc': 'description',
+    b'desc': 'description',
     b'\xa9grp': 'grouping',
     b'\xa9gen': 'genre',
-    'cprt': 'copyright',
-    'soal': 'albumsort',
-    'soaa': 'albumartistsort',
-    'soar': 'artistsort',
-    'sonm': 'titlesort',
-    'soco': 'composersort',
+    b'cprt': 'copyright',
+    b'soal': 'albumsort',
+    b'soaa': 'albumartistsort',
+    b'soar': 'artistsort',
+    b'sonm': 'titlesort',
+    b'soco': 'composersort',
     }.items()):
     EasyMP4Tags.RegisterTextKey(key, atomid)
 
@@ -227,13 +227,13 @@ for name, key in list({
     EasyMP4Tags.RegisterFreeformKey(key, name)
 
 for name, key in list({
-    "tmpo": "bpm",
+    b"tmpo": "bpm",
     }.items()):
     EasyMP4Tags.RegisterIntKey(key, name)
 
 for name, key in list({
-    "trkn": "tracknumber",
-    "disk": "discnumber",
+    b"trkn": "tracknumber",
+    b"disk": "discnumber",
     }.items()):
     EasyMP4Tags.RegisterIntPairKey(key, name)
 
