@@ -241,7 +241,7 @@ class MP4Tags(DictProxy, Metadata):
     """
 
     def load(self, atoms, fileobj):
-        try: ilst = atoms["moov.udta.meta.ilst"]
+        try: ilst = atoms[b"moov.udta.meta.ilst"]
         except KeyError as key:
             raise MP4MetadataError(key)
         for atom in ilst.children:
@@ -250,36 +250,34 @@ class MP4Tags(DictProxy, Metadata):
             info = self.__atoms.get(atom.name, (type(self).__parse_text, None))
             info[0](self, atom, data, *info[2:])
 
-    def __key_sort(item1, item2):
-        (key1, v1) = item1
-        (key2, v2) = item2
+    def __key_sort(item):
+        (key, v) = item
         # iTunes always writes the tags in order of "relevance", try
         # to copy it as closely as possible.
         order = [b"\xa9nam", b"\xa9ART", b"\xa9wrt", b"\xa9al",
                  b"\xa9gen", b"gnre", b"trkn", b"disk",
                  b"\xa9day", b"cpil", b"pgap", b"pcst", b"tmpo",
                  b"\xa9too", b"----", b"covrb", b"\xa9lyr"]
-        order = dict(list(zip(order, list(range(len(order))))))
+        order = {el:i for i,el in enumerate(order)}
         last = len(order)
         # If there's no key-based way to distinguish, order by length.
         # If there's still no way, go by string comparison on the
         # values, so we at least have something determinstic.
-        return (cmp(order.get(key1[:4], last), order.get(key2[:4], last)) or
-                cmp(len(v1), len(v2)) or cmp(v1, v2))
+        return (order.get(key[:4], last), len(v), v)
     __key_sort = staticmethod(__key_sort)
 
     def save(self, filename):
         """Save the metadata to the given filename."""
         values = []
         items = list(self.items())
-        items.sort(self.__key_sort)
+        items.sort(key=self.__key_sort)
         for key, value in items:
             info = self.__atoms.get(key[:4], (None, type(self).__render_text))
             try:
                 values.append(info[1](self, key, value, *info[2:]))
             except (TypeError, ValueError) as s:
                 raise MP4MetadataValueError(s).with_traceback(sys.exc_info()[2])
-        data = Atom.render(b"ilst", "".join(values))
+        data = Atom.render(b"ilst", b"".join(values))
 
         # Find the old atoms.
         fileobj = open(filename, "rb+")
