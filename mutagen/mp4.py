@@ -186,7 +186,7 @@ class Atoms(object):
 class MP4Tags(DictProxy, Metadata):
     """Dictionary containing Apple iTunes metadata list key/values.
 
-    Keys are four byte identifiers, except for freeform ('----')
+    Keys are four byte identifiers, except for freeform (b'----')
     keys. Values are usually unicode strings, but some atoms have a
     special structure:
 
@@ -194,45 +194,45 @@ class MP4Tags(DictProxy, Metadata):
         b'\xa9nam' -- track title
         b'\xa9alb' -- album
         b'\xa9ART' -- artist
-        'aART' -- album artist
+        b'aART' -- album artist
         b'\xa9wrt' -- composer
         b'\xa9day' -- year
         b'\xa9cmt' -- comment
-        'desc' -- description (usually used in podcasts)
-        'purd' -- purchase date
+        b'desc' -- description (usually used in podcasts)
+        b'purd' -- purchase date
         b'\xa9grp' -- grouping
         b'\xa9gen' -- genre
         b'\xa9lyr' -- lyrics
-        'purl' -- podcast URL
-        'egid' -- podcast episode GUID
-        'catg' -- podcast category
-        'keyw' -- podcast keywords
+        b'purl' -- podcast URL
+        b'egid' -- podcast episode GUID
+        b'catg' -- podcast category
+        b'keyw' -- podcast keywords
         b'\xa9too' -- encoded by
-        'cprt' -- copyright
-        'soal' -- album sort order
-        'soaa' -- album artist sort order
-        'soar' -- artist sort order
-        'sonm' -- title sort order
-        'soco' -- composer sort order
-        'sosn' -- show sort order
-        'tvsh' -- show name
+        b'cprt' -- copyright
+        b'soal' -- album sort order
+        b'soaa' -- album artist sort order
+        b'soar' -- artist sort order
+        b'sonm' -- title sort order
+        b'soco' -- composer sort order
+        b'sosn' -- show sort order
+        b'tvsh' -- show name
 
     Boolean values:
-        'cpil' -- part of a compilation
-        'pgap' -- part of a gapless album
-        'pcst' -- podcast (iTunes reads this only on import)
+        b'cpil' -- part of a compilation
+        b'pgap' -- part of a gapless album
+        b'pcst' -- podcast (iTunes reads this only on import)
 
     Tuples of ints (multiple values per key are supported):
-        'trkn' -- track number, total tracks
-        'disk' -- disc number, total discs
+        b'trkn' -- track number, total tracks
+        b'disk' -- disc number, total discs
 
     Others:
-        'tmpo' -- tempo/BPM, 16 bit int
-        'covr' -- cover artwork, list of MP4Cover objects (which are
+        b'tmpo' -- tempo/BPM, 16 bit int
+        b'covr' -- cover artwork, list of MP4Cover objects (which are
                   tagged strs)
-        'gnre' -- ID3v1 genre. Not supported, use b'\xa9gen' instead.
+        b'gnre' -- ID3v1 genre. Not supported, use b'\xa9gen' instead.
 
-    The freeform '----' frames use a key in the format '----:mean:name'
+    The freeform b'----' frames use a key in the format '----:mean:name'
     where 'mean' is usually 'com.apple.iTunes' and 'name' is a unique
     identifier for this frame. The value is a str, but is probably
     text that can be decoded as UTF-8. Multiple values per key are
@@ -260,9 +260,9 @@ class MP4Tags(DictProxy, Metadata):
         # iTunes always writes the tags in order of "relevance", try
         # to copy it as closely as possible.
         order = [b"\xa9nam", b"\xa9ART", b"\xa9wrt", b"\xa9alb",
-                 b"\xa9gen", "gnre", "trkn", "disk",
-                 b"\xa9day", "cpil", "pgap", "pcst", "tmpo",
-                 b"\xa9too", "----", "covr", b"\xa9lyr"]
+                 b"\xa9gen", b"gnre", b"trkn", b"disk",
+                 b"\xa9day", b"cpil", b"pgap", b"pcst", b"tmpo",
+                 b"\xa9too", b"----", b"covr", b"\xa9lyr"]
         order = dict(list(zip(order, list(range(len(order))))))
         last = len(order)
         # If there's no key-based way to distinguish, order by length.
@@ -448,7 +448,7 @@ class MP4Tags(DictProxy, Metadata):
         name = struct.pack(">I4sI", len(name) + 12, "name", 0) + name
         if isinstance(value, str):
             value = [value]
-        return Atom.render("----", mean + name + "".join([
+        return Atom.render(b"----", mean + name + "".join([
             struct.pack(">I4s2I", len(data) + 16, "data", 1, 0) + data
             for data in value]))
 
@@ -517,7 +517,7 @@ class MP4Tags(DictProxy, Metadata):
                     pos += length
                     continue
                 raise MP4MetadataError(
-                    "unexpected atom %r inside 'covr'" % name)
+                    "unexpected atom %r inside b'covr'" % name)
             if imageformat not in (MP4Cover.FORMAT_JPEG, MP4Cover.FORMAT_PNG):
                 imageformat = MP4Cover.FORMAT_JPEG
             cover = MP4Cover(data[pos+16:pos+length], imageformat)
@@ -550,24 +550,24 @@ class MP4Tags(DictProxy, Metadata):
         self.save(filename)
 
     __atoms = {
-        "----": (__parse_freeform, __render_freeform),
-        "trkn": (__parse_pair, __render_pair),
-        "disk": (__parse_pair, __render_pair_no_trailing),
-        "gnre": (__parse_genre, None),
-        "tmpo": (__parse_tempo, __render_tempo),
-        "cpil": (__parse_bool, __render_bool),
-        "pgap": (__parse_bool, __render_bool),
-        "pcst": (__parse_bool, __render_bool),
-        "covr": (__parse_cover, __render_cover),
-        "purl": (__parse_text, __render_text, 0),
-        "egid": (__parse_text, __render_text, 0),
+        b"----": (__parse_freeform, __render_freeform),
+        b"trkn": (__parse_pair, __render_pair),
+        b"disk": (__parse_pair, __render_pair_no_trailing),
+        b"gnre": (__parse_genre, None),
+        b"tmpo": (__parse_tempo, __render_tempo),
+        b"cpil": (__parse_bool, __render_bool),
+        b"pgap": (__parse_bool, __render_bool),
+        b"pcst": (__parse_bool, __render_bool),
+        b"covr": (__parse_cover, __render_cover),
+        b"purl": (__parse_text, __render_text, 0),
+        b"egid": (__parse_text, __render_text, 0),
         }
 
     def pprint(self):
         values = []
         for key, value in self.items():
             key = key.decode('latin1')
-            if key == "covr":
+            if key == b"covr":
                 values.append("%s=%s" % (key, ", ".join(
                     ["[%d bytes of data]" % len(data) for data in value])))
             elif isinstance(value, list):
