@@ -75,6 +75,10 @@ class Atom(object):
     def __init__(self, fileobj):
         self.offset = fileobj.tell()
         self.length, self.name = struct.unpack(">I4s", fileobj.read(8))
+        try:
+            self.name = self.name.decode()
+        except UnicodeDecodeError:
+            pass
         if self.length == 1:
             self.length, = struct.unpack(">Q", fileobj.read(8))
         elif self.length < 8:
@@ -593,7 +597,7 @@ class MP4Info(object):
             hdlr = trak["mdia", "hdlr"]
             fileobj.seek(hdlr.offset)
             data = fileobj.read(hdlr.length)
-            if data[16:20] == "soun":
+            if data[16:20] == b"soun":
                 break
         else:
             raise MP4StreamInfoError("track has no audio data")
@@ -601,7 +605,7 @@ class MP4Info(object):
         mdhd = trak["mdia", "mdhd"]
         fileobj.seek(mdhd.offset)
         data = fileobj.read(mdhd.length)
-        if ord(data[8]) == 0:
+        if data[8] == 0:
             offset = 20
             fmt = ">2I"
         else:
@@ -615,12 +619,12 @@ class MP4Info(object):
             atom = trak["mdia", "minf", "stbl", "stsd"]
             fileobj.seek(atom.offset)
             data = fileobj.read(atom.length)
-            if data[20:24] == "mp4a":
+            if data[20:24] == b"mp4a":
                 length = cdata.uint_be(data[16:20])
                 (self.channels, self.bits_per_sample, _,
                  self.sample_rate) = struct.unpack(">3HI", data[40:50])
                 # ES descriptor type
-                if data[56:60] == "esds" and ord(data[64:65]) == 0x03:
+                if data[56:60] == b"esds" and ord(data[64:65]) == 0x03:
                     pos = 65
                     # skip extended descriptor type tag, length, ES ID
                     # and stream priority
@@ -628,7 +632,7 @@ class MP4Info(object):
                         pos += 3
                     pos += 4
                     # decoder config descriptor type
-                    if ord(data[pos]) == 0x04:
+                    if data[pos] == 0x04:
                         pos += 1
                         # skip extended descriptor type tag, length,
                         # object type ID, stream type, buffer size

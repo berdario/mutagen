@@ -436,7 +436,7 @@ class TFLACBadBlockSizeWrite(TestCase):
         flac2 = FLAC(self.NEW)
         self.failUnlessEqual(flac["title"], flac2["title"])
         data = open(self.NEW, "rb").read(1024)
-        self.failIf("Tunng" in data)
+        self.failIf(b"Tunng" in data)
 
     def tearDown(self):
         os.unlink(self.NEW)
