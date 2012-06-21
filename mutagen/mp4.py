@@ -415,7 +415,7 @@ class MP4Tags(DictProxy, Metadata):
             yield flags, data[pos+16:pos+length]
             pos += length
     def __render_data(self, key, flags, value):
-        return Atom.render(key, "".join([
+        return Atom.render(key, b"".join([
             Atom.render(b"data", struct.pack(">2I", flags, 0) + data)
             for data in value]))
 
@@ -435,14 +435,14 @@ class MP4Tags(DictProxy, Metadata):
             value.append(data[pos+16:pos+length])
             pos += length
         if value:
-            self["%s:%s:%s" % (atom.name, mean, name)] = value
+            self[atom.name + b":" + mean + b":" + name] = value
     def __render_freeform(self, key, value):
-        dummy, mean, name = key.split(":", 2)
+        dummy, mean, name = key.split(b":", 2)
         mean = struct.pack(">I4sI", len(mean) + 12, b"mean", 0) + mean
         name = struct.pack(">I4sI", len(name) + 12, b"name", 0) + name
         if isinstance(value, str):
             value = [value]
-        return Atom.render(b"----", mean + name + "".join([
+        return Atom.render(b"----", mean + name + b"".join([
             struct.pack(">I4s2I", len(data) + 16, b"data", 1, 0) + data
             for data in value]))
 

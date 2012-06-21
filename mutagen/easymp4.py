@@ -137,7 +137,7 @@ class EasyMP4Tags(DictMixin, Metadata):
             EasyMP4Tags.RegisterFreeformKey(
                 "musicbrainz_artistid", "MusicBrainz Artist Id")
         """
-        atomid = "----:%s:%s" % (mean, name)
+        atomid = b"----:" + mean.encode() + b":" + name.encode()
 
         def getter(tags, key):
             return [s.decode("utf-8", "replace") for s in tags[atomid]]
