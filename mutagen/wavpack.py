@@ -36,7 +36,7 @@ class WavPackInfo(object):
 
     def __init__(self, fileobj):
         header = fileobj.read(28)
-        if len(header) != 28 or not header.startswith("wvpk"):
+        if len(header) != 28 or not header.startswith(b"wvpk"):
             raise WavPackHeaderError("not a WavPack file")
         samples = cdata.uint_le(header[12:16])
         flags = cdata.uint_le(header[24:28])

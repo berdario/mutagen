@@ -156,7 +156,7 @@ class ASFUnicodeAttribute(ASFBaseAttribute):
     TYPE = 0x0000
 
     def parse(self, data):
-        return data.decode("utf-16-le").strip(b"\x00")
+        return data.decode("utf-16-le").strip("\x00")
 
     def _render(self):
         return self.value.encode("utf-16-le") + b"\x00\x00"
@@ -395,7 +395,7 @@ class ContentDescriptionObject(BaseObject):
         for length in lengths:
             end = pos + length
             if length > 0:
-                texts.append(data[pos:end].decode("utf-16-le").strip(b"\x00"))
+                texts.append(data[pos:end].decode("utf-16-le").strip("\x00"))
             else:
                 texts.append(None)
             pos = end
@@ -416,8 +416,8 @@ class ContentDescriptionObject(BaseObject):
                 return value[0].encode("utf-16-le") + b"\x00\x00"
             else:
                 return ""
-        texts = list(map(render_text, _standard_attribute_names))
-        data = struct.pack("<HHHHH", *list(map(len, texts))) + "".join(texts)
+        texts = map(render_text, _standard_attribute_names)
+        data = struct.pack("<HHHHH", *list(map(len, texts))) + b"".join(texts)
         return self.GUID + struct.pack("<Q", 24 + len(data)) + data
 
 
@@ -433,7 +433,7 @@ class ExtendedContentDescriptionObject(BaseObject):
         for i in range(num_attributes):
             name_length, = struct.unpack("<H", data[pos:pos+2])
             pos += 2
-            name = data[pos:pos+name_length].decode("utf-16-le").strip(b"\x00")
+            name = data[pos:pos+name_length].decode("utf-16-le").strip("\x00")
             pos += name_length
             value_type, value_length = struct.unpack("<HH", data[pos:pos+4])
             pos += 4
@@ -512,7 +512,7 @@ class MetadataObject(BaseObject):
             (reserved, stream, name_length, value_type,
              value_length) = struct.unpack("<HHHHI", data[pos:pos+12])
             pos += 12
-            name = data[pos:pos+name_length].decode("utf-16-le").strip(b"\x00")
+            name = data[pos:pos+name_length].decode("utf-16-le").strip("\x00")
             pos += name_length
             value = data[pos:pos+value_length]
             pos += value_length
@@ -542,7 +542,7 @@ class MetadataLibraryObject(BaseObject):
             (language, stream, name_length, value_type,
              value_length) = struct.unpack("<HHHHI", data[pos:pos+12])
             pos += 12
-            name = data[pos:pos+name_length].decode("utf-16-le").strip(b"\x00")
+            name = data[pos:pos+name_length].decode("utf-16-le").strip("\x00")
             pos += name_length
             value = data[pos:pos+value_length]
             pos += value_length

@@ -39,9 +39,9 @@ class TASFInfo(TestCase):
         self.failUnlessAlmostEqual(self.wma3.info.length, 3.7, 1)
 
     def test_bitrate(self):
-        self.failUnlessEqual(self.wma1.info.bitrate / 1000, 64)
-        self.failUnlessEqual(self.wma2.info.bitrate / 1000, 38)
-        self.failUnlessEqual(self.wma3.info.bitrate / 1000, 58)
+        self.failUnlessEqual(self.wma1.info.bitrate // 1000, 64)
+        self.failUnlessEqual(self.wma2.info.bitrate // 1000, 38)
+        self.failUnlessEqual(self.wma3.info.bitrate // 1000, 58)
 
     def test_sample_rate(self):
         self.failUnlessEqual(self.wma1.info.sample_rate, 48000)
