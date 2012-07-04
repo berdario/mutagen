@@ -444,7 +444,7 @@ class ExtendedContentDescriptionObject(BaseObject):
 
     def render(self, asf):
         attrs = list(asf.to_extended_content_description.items())
-        data = "".join([attr.render(name) for (name, attr) in attrs])
+        data = b"".join([attr.render(name) for (name, attr) in attrs])
         data = struct.pack("<QH", 26 + len(data), len(attrs)) + data
         return self.GUID + data
 
@@ -492,7 +492,7 @@ class HeaderExtensionObject(BaseObject):
             datapos += size
 
     def render(self, asf):
-        data = "".join([obj.render(asf) for obj in self.objects])
+        data = b"".join([obj.render(asf) for obj in self.objects])
         return (self.GUID + struct.pack("<Q", 24 + 16 + 6 + len(data)) +
                 b"\x11\xD2\xD3\xAB\xBA\xA9\xcf\x11" +
                 b"\x8E\xE6\x00\xC0\x0C\x20\x53\x65" +
@@ -524,7 +524,7 @@ class MetadataObject(BaseObject):
 
     def render(self, asf):
         attrs = list(asf.to_metadata.items())
-        data = "".join([attr.render_m(name) for (name, attr) in attrs])
+        data = b"".join([attr.render_m(name) for (name, attr) in attrs])
         return (self.GUID + struct.pack("<QH", 26 + len(data), len(attrs)) +
                 data)
 
@@ -554,7 +554,7 @@ class MetadataLibraryObject(BaseObject):
 
     def render(self, asf):
         attrs = asf.to_metadata_library
-        data = "".join([attr.render_ml(name) for (name, attr) in attrs])
+        data = b"".join([attr.render_ml(name) for (name, attr) in attrs])
         return (self.GUID + struct.pack("<QH", 26 + len(data), len(attrs)) +
                 data)
 
@@ -634,7 +634,7 @@ class ASF(FileType):
             self.header_extension_obj.objects.append(self.metadata_library_obj)
 
         # Render the header
-        data = "".join([obj.render(self) for obj in self.objects])
+        data = b"".join([obj.render(self) for obj in self.objects])
         data = (HeaderObject.GUID +
                 struct.pack("<QL", len(data) + 30, len(self.objects)) +
                 b"\x01\x02" + data)
