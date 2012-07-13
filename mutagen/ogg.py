@@ -82,9 +82,9 @@ class OggPage(object):
         except struct.error:
             raise error("unable to read full header; got %r" % header)
 
-        if oggs != "OggS":
+        if oggs != b"OggS":
             raise error("read %r, expected %r, at 0x%x" % (
-                oggs, "OggS", fileobj.tell() - 27))
+                oggs, b"OggS", fileobj.tell() - 27))
 
         if self.version != 0:
             raise error("version %r unsupported" % self.version)
@@ -94,7 +94,7 @@ class OggPage(object):
         lacing_bytes = fileobj.read(segments)
         if len(lacing_bytes) != segments:
             raise error("unable to read %r lacing bytes" % segments)
-        for c in map(ord, lacing_bytes):
+        for c in lacing_bytes:
             total += c
             if c < 255:
                 lacings.append(total)
@@ -132,21 +132,21 @@ class OggPage(object):
         """
 
         data = [
-            struct.pack("<4sBBqIIi", "OggS", self.version, self.__type_flags,
+            struct.pack("<4sBBqIIi", b"OggS", self.version, self.__type_flags,
                         self.position, self.serial, self.sequence, 0)
             ]
 
         lacing_data = []
         for datum in self.packets:
             quot, rem = divmod(len(datum), 255)
-            lacing_data.append(b"\xff" * quot + chr(rem))
-        lacing_data = "".join(lacing_data)
+            lacing_data.append(b"\xff" * quot + chr(rem).encode())
+        lacing_data = b"".join(lacing_data)
         if not self.complete and lacing_data.endswith(b"\x00"):
             lacing_data = lacing_data[:-1]
-        data.append(chr(len(lacing_data)))
+        data.append(chr(len(lacing_data)).encode())
         data.append(lacing_data)
         data.extend(self.packets)
-        data = "".join(data)
+        data = b"".join(data)
 
         # Python's CRC is swapped relative to Ogg's needs.
         crc = ~zlib.crc32(data.translate(cdata.bitswap), -1)
@@ -289,7 +289,7 @@ class OggPage(object):
         page.sequence = sequence
 
         for packet in packets:
-            page.packets.append("")
+            page.packets.append(b"")
             while packet:
                 data, packet = packet[:chunk_size], packet[chunk_size:]
                 if page.size < default_size and len(page.packets) < 255:

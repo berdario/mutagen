@@ -12,7 +12,7 @@ You should not rely on the interfaces here being stable. They are
 intended for internal use in Mutagen only.
 """
 
-import struct
+import struct, codecs
 
 from fnmatch import fnmatchcase
 
@@ -159,8 +159,10 @@ class cdata(object):
     to_longlong_be = staticmethod(lambda data: struct.pack('>q', data))
     to_ulonglong_be = staticmethod(lambda data: struct.pack('>Q', data))
 
-    bitswap = ''.join([chr(sum([((val >> i) & 1) << (7-i) for i in range(8)]))
-                       for val in range(256)])
+    bitswap = codecs.encode(
+        ''.join([chr(sum([((val >> i) & 1) << (7-i) for i in range(8)]))
+                       for val in range(256)]),
+        "raw_unicode_escape")
 
     test_bit = staticmethod(lambda value, n: bool((value >> n) & 1))
 
