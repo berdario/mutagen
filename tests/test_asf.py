@@ -237,7 +237,7 @@ class TASFLargeValue(TestCase):
 
     def test_save_small_bytearray(self):
         audio = ASF(self.filename)
-        audio["QL/LargeObject"] = [ASFValue("." * 0xFFFF, BYTEARRAY)]
+        audio["QL/LargeObject"] = [ASFValue(b"." * 0xFFFF, BYTEARRAY)]
         audio.save()
         self.failIf("QL/LargeObject" not in audio.to_extended_content_description)
         self.failIf("QL/LargeObject" in audio.to_metadata)
@@ -245,7 +245,7 @@ class TASFLargeValue(TestCase):
 
     def test_save_large_bytearray(self):
         audio = ASF(self.filename)
-        audio["QL/LargeObject"] = [ASFValue("." * (0xFFFF + 1), BYTEARRAY)]
+        audio["QL/LargeObject"] = [ASFValue(b"." * (0xFFFF + 1), BYTEARRAY)]
         audio.save()
         self.failIf("QL/LargeObject" in audio.to_extended_content_description)
         self.failIf("QL/LargeObject" in audio.to_metadata)
