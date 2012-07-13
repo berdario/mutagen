@@ -19,7 +19,6 @@ http://www.xiph.org/ogg/doc/rfc3533.txt.
 import struct
 import sys
 import zlib
-import codecs
 
 from io import BytesIO
 
@@ -144,7 +143,7 @@ class OggPage(object):
         lacing_data = b"".join(lacing_data)
         if not self.complete and lacing_data.endswith(b"\x00"):
             lacing_data = lacing_data[:-1]
-        data.append(codecs.encode(chr(len(lacing_data)), 'raw_unicode_escape'))
+        data.append(bytes([len(lacing_data)]))
         data.append(lacing_data)
         data.extend(self.packets)
         data = b"".join(data)

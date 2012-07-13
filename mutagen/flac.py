@@ -24,7 +24,6 @@ __all__ = ["FLAC", "Open", "delete"]
 import sys
 import struct
 from io import BytesIO
-from codecs import raw_unicode_escape_encode as raw_encode
 from functools import reduce
 from ._vorbis import VCommentDict
 from mutagen import FileType
@@ -70,7 +69,7 @@ class MetadataBlock(object):
         codes = [[block.code, block.write()] for block in blocks]
         codes[-1][0] |= 128
         for code, datum in codes:
-            byte = raw_encode(chr(code))[0]
+            byte = bytes([code])
             if len(datum) > 2**24:
                 raise error("block is too long to write")
             length = struct.pack(">I", len(datum))[-3:]
@@ -160,11 +159,11 @@ class StreamInfo(MetadataBlock):
         byte = (self.sample_rate & 0xF) << 4
         byte += ((self.channels - 1) & 7) << 1
         byte += ((self.bits_per_sample - 1) >> 4) & 1
-        f.write(raw_encode(chr(byte))[0])
+        f.write(bytes([byte]))
         # 4 bits of bps, 4 of sample count
         byte = ((self.bits_per_sample - 1) & 0xF)  << 4
         byte += (self.total_samples >> 32) & 0xF
-        f.write(raw_encode(chr(byte))[0])
+        f.write(bytes([byte]))
         # last 32 of sample count
         f.write(struct.pack(">I", self.total_samples & 0xFFFFFFFF))
         # MD5 signature

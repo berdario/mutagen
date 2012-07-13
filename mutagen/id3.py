@@ -35,7 +35,6 @@ import struct
 from struct import unpack, pack, error as StructError
 from zlib import error as zlibError
 from warnings import warn
-from codecs import raw_unicode_escape_encode as raw_encode
 
 import mutagen
 from mutagen._util import insert_bytes, delete_bytes, DictProxy
@@ -656,7 +655,7 @@ class Spec(object):
 
 class ByteSpec(Spec):
     def read(self, frame, data): return data[0], data[1:]
-    def write(self, frame, value): return raw_encode(chr(value))[0]
+    def write(self, frame, value): return bytes([value])
     def validate(self, frame, value): return value
 
 class IntegerSpec(Spec):
@@ -2010,7 +2009,7 @@ def MakeID3v1(id3):
         except IndexError: pass
         else:
             if genre in TCON.GENRES:
-                v1["genre"] = raw_encode(chr(TCON.GENRES.index(genre)))[0]
+                v1["genre"] = bytes([TCON.GENRES.index(genre)])
     if "genre" not in v1:
         v1["genre"] = b"\xff"
 
