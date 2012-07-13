@@ -19,6 +19,7 @@ http://www.xiph.org/ogg/doc/rfc3533.txt.
 import struct
 import sys
 import zlib
+import codecs
 
 from io import BytesIO
 
@@ -143,7 +144,7 @@ class OggPage(object):
         lacing_data = b"".join(lacing_data)
         if not self.complete and lacing_data.endswith(b"\x00"):
             lacing_data = lacing_data[:-1]
-        data.append(chr(len(lacing_data)).encode())
+        data.append(codecs.encode(chr(len(lacing_data)), 'raw_unicode_escape'))
         data.append(lacing_data)
         data.extend(self.packets)
         data = b"".join(data)
@@ -246,7 +247,7 @@ class OggPage(object):
             if not pages[-1].complete:
                 raise ValueError("last packet does not complete")
         elif pages and pages[0].continued:
-            packets.append("")
+            packets.append(b"")
 
         for page in pages:
             if serial != page.serial:
@@ -395,7 +396,7 @@ class OggPage(object):
             # The file is less than 64k in length.
             fileobj.seek(0)
         data = fileobj.read()
-        try: index = data.rindex("OggS")
+        try: index = data.rindex(b"OggS")
         except ValueError:
             raise error("unable to find final Ogg header")
         stringobj = BytesIO(data[index:])
