@@ -12,6 +12,7 @@
 __all__ = ["ASF", "Open"]
 
 import struct
+from functools import total_ordering
 from mutagen import FileType, Metadata
 from mutagen._util import insert_bytes, delete_bytes, DictMixin
 
@@ -92,7 +93,7 @@ class ASFTags(list, DictMixin, Metadata):
 
     def keys(self):
         """Return all keys in the comment."""
-        return self and set(zip(*self)[0])
+        return self and set(next(zip(*self)))
 
     def as_dict(self):
         """Return a copy of the comment data in a real dict."""
@@ -102,6 +103,7 @@ class ASFTags(list, DictMixin, Metadata):
         return d
 
 
+@total_ordering
 class ASFBaseAttribute(object):
     """Generic attribute."""
     TYPE = None
@@ -151,6 +153,12 @@ class ASFBaseAttribute(object):
         return (struct.pack("<HHHHI", self.language or 0, self.stream or 0,
                             len(name), self.TYPE, len(data)) + name + data)
 
+    def __lt__(self, other):
+        return self.value < other
+
+    def __eq__(self, other):
+        return self.value == other
+
 class ASFUnicodeAttribute(ASFBaseAttribute):
     """Unicode string attribute."""
     TYPE = 0x0000
@@ -166,9 +174,6 @@ class ASFUnicodeAttribute(ASFBaseAttribute):
 
     def __str__(self):
         return self.value
-
-    def __cmp__(self, other):
-        return cmp(str(self), other)
 
     __hash__ = ASFBaseAttribute.__hash__
 
@@ -189,8 +194,11 @@ class ASFByteArrayAttribute(ASFBaseAttribute):
     def __str__(self):
         return "[binary data (%s bytes)]" % len(self.value)
 
-    def __cmp__(self, other):
-        return cmp(str(self), other)
+    def __lt__(self, other):
+        return str(self) < other
+
+    def __eq__(self, other):
+        return str(self) == other
 
     __hash__ = ASFBaseAttribute.__hash__
 
@@ -220,9 +228,6 @@ class ASFBoolAttribute(ASFBaseAttribute):
     def __str__(self):
         return str(self.value)
 
-    def __cmp__(self, other):
-        return cmp(bool(self), other)
-
     __hash__ = ASFBaseAttribute.__hash__
 
 
@@ -244,9 +249,6 @@ class ASFDWordAttribute(ASFBaseAttribute):
 
     def __str__(self):
         return str(self.value)
-
-    def __cmp__(self, other):
-        return cmp(int(self), other)
 
     __hash__ = ASFBaseAttribute.__hash__
 
@@ -270,9 +272,6 @@ class ASFQWordAttribute(ASFBaseAttribute):
     def __str__(self):
         return str(self.value)
 
-    def __cmp__(self, other):
-        return cmp(int(self), other)
-
     __hash__ = ASFBaseAttribute.__hash__
 
 
@@ -295,9 +294,6 @@ class ASFWordAttribute(ASFBaseAttribute):
     def __str__(self):
         return str(self.value)
 
-    def __cmp__(self, other):
-        return cmp(int(self), other)
-
     __hash__ = ASFBaseAttribute.__hash__
 
 
@@ -316,9 +312,6 @@ class ASFGUIDAttribute(ASFBaseAttribute):
 
     def __str__(self):
         return self.value
-
-    def __cmp__(self, other):
-        return cmp(str(self), other)
 
     __hash__ = ASFBaseAttribute.__hash__
 
@@ -415,9 +408,9 @@ class ContentDescriptionObject(BaseObject):
             if value:
                 return value[0].encode("utf-16-le") + b"\x00\x00"
             else:
-                return ""
-        texts = map(render_text, _standard_attribute_names)
-        data = struct.pack("<HHHHH", *list(map(len, texts))) + b"".join(texts)
+                return b""
+        texts = list(map(render_text, _standard_attribute_names))
+        data = struct.pack("<HHHHH", *map(len, texts)) + b"".join(texts)
         return self.GUID + struct.pack("<Q", 24 + len(data)) + data
 
 
