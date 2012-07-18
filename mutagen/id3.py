@@ -224,7 +224,7 @@ class ID3(DictProxy, mutagen.Metadata):
 
         if self.f_extended:
             extsize = self.__fullread(4)
-            if extsize in Frames:
+            if extsize.decode() in Frames:
                 # Some tagger sets the extended header flag but
                 # doesn't write an extended header; in this case, the
                 # ID3 data follows immediately. Since no extended
@@ -680,7 +680,7 @@ class EncodingSpec(ByteSpec):
     def read(self, frame, data):
         enc, data = super(EncodingSpec, self).read(frame, data)
         if enc < 16: return enc, data
-        else: return 0, chr(enc)+data
+        else: return 0, bytes([enc])+data
 
     def validate(self, frame, value):
         if value is None: return None
@@ -714,7 +714,7 @@ class EncodedTextSpec(Spec):
 
     def read(self, frame, data):
         enc, term = self._encodings[frame.encoding]
-        ret = ''
+        ret = b''
         if len(term) == 1:
             if term in data:
                 data, ret = data.split(term, 1)
