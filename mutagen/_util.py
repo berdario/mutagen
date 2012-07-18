@@ -13,9 +13,11 @@ intended for internal use in Mutagen only.
 """
 
 import struct
+from functools import total_ordering
 
 from fnmatch import fnmatchcase
 
+@total_ordering
 class DictMixin(object):
     """Implement the dict API using keys() and __*item__ methods.
 
@@ -92,9 +94,11 @@ class DictMixin(object):
     def __repr__(self):
         return repr(dict(list(self.items())))
 
-    def __cmp__(self, other):
-        if other is None: return 1
-        else: return cmp(dict(list(self.items())), other)
+    def __eq__(self, other):
+        return {k:v for k,v in self.items()} == other
+
+    def __lt__(self, other):
+        return {k:v for k,v in self.items()} < other
 
     __hash__ = object.__hash__
 
