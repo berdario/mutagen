@@ -144,7 +144,8 @@ class VComment(mutagen.Metadata, list):
 
     def clear(self):
         """Clear all keys from the comment."""
-        del(self[:])
+        for e in list(self):
+            self.remove(e)
 
     def write(self, framing=True):
         """Return a string representation of the data.

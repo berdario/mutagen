@@ -139,7 +139,7 @@ class OggPage(object):
         lacing_data = []
         for datum in self.packets:
             quot, rem = divmod(len(datum), 255)
-            lacing_data.append(b"\xff" * quot + chr(rem).encode())
+            lacing_data.append(b"\xff" * quot + bytes([rem]))
         lacing_data = b"".join(lacing_data)
         if not self.complete and lacing_data.endswith(b"\x00"):
             lacing_data = lacing_data[:-1]
@@ -351,7 +351,7 @@ class OggPage(object):
         if not new_pages[-1].complete and len(new_pages[-1].packets) == 1:
             new_pages[-1].position = -1
 
-        new_data = "".join(map(klass.write, new_pages))
+        new_data = b"".join(map(klass.write, new_pages))
 
         # Make room in the file for the new data.
         delta = len(new_data)
