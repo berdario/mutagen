@@ -59,14 +59,14 @@ class TEasyID3(TestCase):
             self.id3.save(self.filename)
             id3 = EasyID3(self.filename)
             self.failUnlessEqual(id3[key], ["a test value"])
-            self.failUnlessEqual(list(id3.keys()), [key])
+            self.failUnlessEqual(id3.keys(), [key])
 
             # And non-creation setting.
             self.id3[key] = "a test value"
             self.id3.save(self.filename)
             id3 = EasyID3(self.filename)
             self.failUnlessEqual(id3[key], ["a test value"])
-            self.failUnlessEqual(list(id3.keys()), [key])
+            self.failUnlessEqual(id3.keys(), [key])
 
             del(self.id3[key])
 

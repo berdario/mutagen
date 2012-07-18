@@ -146,7 +146,7 @@ class EasyID3(DictMixin, Metadata):
                 enc = 0
                 # Store 8859-1 if we can, per MusicBrainz spec.
                 for v in value:
-                    if max(v) > b'\x7f':
+                    if ord(max(v)) > 127:
                         enc = 3
                 id3.add(mutagen.id3.TXXX(encoding=enc, text=value, desc=desc))
             else:

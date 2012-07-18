@@ -359,9 +359,9 @@ class ID3(DictProxy, mutagen.Metadata):
 
         # Sort frames by 'importance'
         order = ["TIT2", "TPE1", "TRCK", "TALB", "TPOS", "TDRC", "TCON"]
-        order = dict(list(zip(order, list(range(len(order))))))
+        order = {k:i for i,k in enumerate(order)}
         last = len(order)
-        frames = list(self.items())
+        frames = self.items()
         frames.sort(key=lambda a: order.get(a[0][:4], last))
 
         framedata = [self.__save_frame(frame) for (key, frame) in frames]
@@ -549,7 +549,7 @@ def delete(filename, delete_v1=True, delete_v2=True):
             f.seek(-128, 2)
         except IOError: pass
         else:
-            if f.read(3) == "TAG":
+            if f.read(3) == b"TAG":
                 f.seek(-128, 2)
                 f.truncate()
 
@@ -561,7 +561,7 @@ def delete(filename, delete_v1=True, delete_v2=True):
         try: id3, vmaj, vrev, flags, insize = unpack('>3sBBB4s', idata)
         except struct.error: id3, insize = '', -1
         insize = BitPaddedInt(insize)
-        if id3 == 'ID3' and insize >= 0:
+        if id3 == b'ID3' and insize >= 0:
             delete_bytes(f, insize + 10, 0)
 
 class BitPaddedInt(int):
@@ -701,9 +701,9 @@ class StringSpec(Spec):
         raise ValueError('Invalid StringSpec[%d] data: %r' % (s.len, value))
 
 class BinaryDataSpec(Spec):
-    def read(self, frame, data): return data, ''
-    def write(self, frame, value): return str(value)
-    def validate(self, frame, value): return str(value)
+    def read(self, frame, data): return data, b''
+    def write(self, frame, value): return value
+    def validate(self, frame, value): return value
 
 class EncodedTextSpec(Spec):
     # Okay, seriously. This is private and defined explicitly and
@@ -864,14 +864,14 @@ class VolumePeakSpec(Spec):
     def read(self, frame, data):
         # http://bugs.xmms.org/attachment.cgi?id=113&action=view
         peak = 0
-        bits = ord(data[0])
+        bits = data[0]
         byte = min(4, (bits + 7) >> 3)
         # not enough frame data
         if byte + 1 > len(data): raise ID3JunkFrameError
         shift = ((8 - (bits & 7)) & 7) + (4 - byte) * 8
         for i in range(1, byte+1):
             peak *= 256
-            peak += ord(data[i])
+            peak += data[i]
         peak *= 2**shift
         return (float(peak) / (2**31-1)), data[1+byte:]
 
@@ -1220,8 +1220,8 @@ class TimeStampTextFrame(TextFrame):
 
     _framespec = [ EncodingSpec('encoding'),
         MultiSpec('text', TimeStampSpec('stamp'), sep=',') ]
-    def __str__(self): return self.__unicode__().encode('utf-8')
-    def __unicode__(self): return ','.join([stamp.text for stamp in self.text])
+    def __str__(self):
+        return ','.join([stamp.text for stamp in self.text])
     def _pprint(self):
         return " / ".join([stamp.text for stamp in self.text])
 
@@ -1238,8 +1238,7 @@ class UrlFrame(Frame):
     """
 
     _framespec = [ Latin1TextSpec('url') ]
-    def __str__(self): return self.url.encode('utf-8')
-    def __unicode__(self): return self.url
+    def __str__(self): return self.url
     def __eq__(self, other): return self.url == other
     __hash__ = Frame.__hash__
     def _pprint(self): return self.url
@@ -1297,7 +1296,7 @@ class TCON(TextFrame):
         self.text = list(map(self.__decode, genres))
 
     def __decode(self, value):
-        if isinstance(value, str):
+        if isinstance(value, bytes):
             enc = EncodedTextSpec._encodings[self.encoding][0]
             return value.decode(enc)
         else: return value
@@ -1459,8 +1458,7 @@ class USLT(Frame):
         EncodedTextSpec('desc'), EncodedTextSpec('text') ]
     HashKey = property(lambda s: '%s:%s:%r' % (s.FrameID, s.desc, s.lang))
 
-    def __str__(self): return self.text.encode('utf-8')
-    def __unicode__(self): return self.text
+    def __str__(self): return self.text
     def __eq__(self, other): return self.text == other
     __hash__ = Frame.__hash__
     
@@ -1667,8 +1665,7 @@ class AENC(FrameOpt):
     _optionalspec = [ BinaryDataSpec('data') ]
     HashKey = property(lambda s: '%s:%s' % (s.FrameID, s.owner))
 
-    def __str__(self): return self.owner.encode('utf-8')
-    def __unicode__(self): return self.owner
+    def __str__(self): return self.owner
     def __eq__(self, other): return self.owner == other
     __hash__ = FrameOpt.__hash__
 
@@ -1723,7 +1720,7 @@ class UFID(Frame):
         else: return s.data == o
     __hash__ = Frame.__hash__
     def _pprint(self):
-        isascii = ord(max(self.data)) < 128
+        isascii = max(self.data) < 128
         if isascii: return "%s=%s" % (self.owner, self.data)
         else: return "%s (%d bytes)" % (self.owner, len(self.data))
 
@@ -1739,8 +1736,7 @@ class USER(Frame):
         EncodedTextSpec('text') ]
     HashKey = property(lambda s: '%s:%r' % (s.FrameID, s.lang))
 
-    def __str__(self): return self.text.encode('utf-8')
-    def __unicode__(self): return self.text
+    def __str__(self): return self.text
     def __eq__(self, other): return self.text == other
     __hash__ = Frame.__hash__
     def _pprint(self): return "%r=%s" % (self.lang, self.text)
@@ -1750,8 +1746,7 @@ class OWNE(Frame):
     _framespec = [ EncodingSpec('encoding'), Latin1TextSpec('price'),
                    StringSpec('date', 8), EncodedTextSpec('seller') ]
 
-    def __str__(self): return self.seller.encode('utf-8')
-    def __unicode__(self): return self.seller
+    def __str__(self): return self.seller
     def __eq__(self, other): return self.seller == other
     __hash__ = Frame.__hash__
 
@@ -1785,8 +1780,7 @@ class GRID(FrameOpt):
     _optionalspec = [ BinaryDataSpec('data') ]
     HashKey = property(lambda s: '%s:%s' % (s.FrameID, s.group))
     def __pos__(self): return self.group
-    def __str__(self): return self.owner.encode('utf-8')
-    def __unicode__(self): return self.owner
+    def __str__(self): return self.owner
     def __eq__(self, other): return self.owner == other or self.group == other
     __hash__ = FrameOpt.__hash__
     
@@ -1799,7 +1793,7 @@ class PRIV(Frame):
     def __str__(self): return self.data
     def __eq__(self, other): return self.data == other
     def _pprint(self):
-        isascii = ord(max(self.data)) < 128
+        isascii = max(self.data) < 128
         if isascii: return "%s=%s" % (self.owner, self.data)
         else: return "%s (%d bytes)" % (self.owner, len(self.data))
     __hash__ = Frame.__hash__
