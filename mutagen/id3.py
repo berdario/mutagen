@@ -33,7 +33,7 @@ __all__ = ['ID3', 'ID3FileType', 'Frames', 'Open', 'delete']
 import struct
 
 from struct import unpack, pack, error as StructError
-from zlib import error as zlibError
+from zlib import decompress, error as zlibError
 from functools import total_ordering
 from warnings import warn
 
@@ -1083,12 +1083,12 @@ class Frame(object):
             if tflags & Frame.FLAG24_ENCRYPT:
                 raise ID3EncryptionUnsupportedError
             if tflags & Frame.FLAG24_COMPRESS:
-                try: data = data.decode('zlib').encode()
+                try: data = decompress(data)
                 except zlibError as err:
                     # the initial mutagen that went out with QL 0.12 did not
                     # write the 4 bytes of uncompressed size. Compensate.
                     data = datalen_bytes + data
-                    try: data = data.decode('zlib').encode()
+                    try: data = decompress(data)
                     except zlibError as err:
                         if id3.PEDANTIC:
                             raise ID3BadCompressedData('%s: %r' % (err, data))
@@ -1100,7 +1100,7 @@ class Frame(object):
             if tflags & Frame.FLAG23_ENCRYPT:
                 raise ID3EncryptionUnsupportedError
             if tflags & Frame.FLAG23_COMPRESS:
-                try: data = data.decode('zlib').encode()
+                try: data = decompress(data)
                 except zlibError as err:
                     if id3.PEDANTIC:
                         raise ID3BadCompressedData('%s: %r' % (err, data))
