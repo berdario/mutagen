@@ -1973,7 +1973,7 @@ def ParseID3v1(string):
     except StructError:
         return None
 
-    if tag != "TAG":
+    if tag != b"TAG":
         return None
 
     def fix(string):
@@ -1991,7 +1991,7 @@ def ParseID3v1(string):
         encoding=0, lang="eng", desc="ID3v1 Comment", text=comment)
     # Don't read a track number if it looks like the comment was
     # padded with spaces instead of nulls (thanks, WinAmp).
-    if track and (track != 32 or string[-3] == b'\x00'):
+    if track and (track != 32 or string[-3] == 0):
         frames["TRCK"] = TRCK(encoding=0, text=str(track))
     if genre != 255: frames["TCON"] = TCON(encoding=0, text=str(genre))
     return frames

@@ -309,7 +309,7 @@ class ID3v1Tags(TestCase):
         self.failUnless(32, ParseID3v1(tag)["TRCK"])
         del(self.id3["TRCK"])
         tag = MakeID3v1(self.id3)
-        tag = tag[:125] + '  ' + tag[-1]
+        tag = tag[:125] + b'  ' + tag[-1:]
         self.failIf("TRCK" in ParseID3v1(tag))
 
     def test_nulls(self):
@@ -317,20 +317,20 @@ class ID3v1Tags(TestCase):
         s = 'TAG%(title)30s%(artist)30s%(album)30s%(year)4s%(cmt)29s\x03\x01'
         s = s % dict(artist='abcd\00fg', title='hijklmn\x00p',
                     album='qrst\x00v', cmt='wxyz', year='1224')
-        tags = ParseID3v1(s)
-        self.assertEquals('abcd'.decode('latin1'), tags['TPE1'])
-        self.assertEquals('hijklmn'.decode('latin1'), tags['TIT2'])
-        self.assertEquals('qrst'.decode('latin1'), tags['TALB'])
+        tags = ParseID3v1(s.encode("raw_unicode_escape"))
+        self.assertEquals(b'abcd'.decode('latin1'), tags['TPE1'])
+        self.assertEquals(b'hijklmn'.decode('latin1'), tags['TIT2'])
+        self.assertEquals(b'qrst'.decode('latin1'), tags['TALB'])
 
     def test_nonascii(self):
         from mutagen.id3 import ParseID3v1
         s = 'TAG%(title)30s%(artist)30s%(album)30s%(year)4s%(cmt)29s\x03\x01'
         s = s % dict(artist='abcd\xe9fg', title='hijklmn\xf3p',
                     album='qrst\xfcv', cmt='wxyz', year='1234')
-        tags = ParseID3v1(s)
-        self.assertEquals('abcd\xe9fg'.decode('latin1'), tags['TPE1'])
-        self.assertEquals('hijklmn\xf3p'.decode('latin1'), tags['TIT2'])
-        self.assertEquals('qrst\xfcv'.decode('latin1'), tags['TALB'])
+        tags = ParseID3v1(s.encode("raw_unicode_escape"))
+        self.assertEquals(b'abcd\xe9fg'.decode('latin1'), tags['TPE1'])
+        self.assertEquals(b'hijklmn\xf3p'.decode('latin1'), tags['TIT2'])
+        self.assertEquals(b'qrst\xfcv'.decode('latin1'), tags['TALB'])
         self.assertEquals('wxyz', tags['COMM'])
         self.assertEquals("3", tags['TRCK'])
         self.assertEquals("1234", tags['TDRC'])
@@ -344,7 +344,7 @@ class ID3v1Tags(TestCase):
 
     def test_make_from_empty(self):
         from mutagen.id3 import MakeID3v1, TCON, COMM
-        empty = 'TAG' + b'\x00' * 124 + b'\xff'
+        empty = b'TAG' + b'\x00' * 124 + b'\xff'
         self.assertEquals(MakeID3v1({}), empty)
         self.assertEquals(MakeID3v1({'TCON': TCON()}), empty)
         self.assertEquals(
@@ -361,7 +361,7 @@ class ID3v1Tags(TestCase):
 
     def test_invalid(self):
         from mutagen.id3 import ParseID3v1
-        self.failUnless(ParseID3v1("") is None)
+        self.failUnless(ParseID3v1(b"") is None)
 
     def test_invalid_track(self):
         from mutagen.id3 import ParseID3v1, MakeID3v1, TRCK
