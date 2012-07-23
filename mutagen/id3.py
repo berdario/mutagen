@@ -34,6 +34,7 @@ import struct
 
 from struct import unpack, pack, error as StructError
 from zlib import error as zlibError
+from functools import total_ordering
 from warnings import warn
 
 import mutagen
@@ -796,6 +797,7 @@ class Latin1TextSpec(EncodedTextSpec):
 
     def validate(self, frame, value): return str(value)
 
+@total_ordering
 class ID3TimeStamp(object):
     """A time stamp in ID3v2 format.
 
@@ -834,7 +836,13 @@ class ID3TimeStamp(object):
 
     def __str__(self): return self.text
     def __repr__(self): return repr(self.text)
-    def __cmp__(self, other): return cmp(self.text, other.text)
+
+    def __eq__(self, other):
+        return self.text == other.text
+
+    def __lt__(self, other):
+        return self.text < other.text
+
     __hash__ = object.__hash__
     def encode(self, *args): return self.text.encode(*args)
 
@@ -1146,8 +1154,6 @@ class FrameOpt(Frame):
         for writer in self._optionalspec:
             try: data.append(writer.write(self, getattr(self, writer.name)))
             except AttributeError: break
-        #if any(map(lambda x:not isinstance(x,bytes),data)):
-            #import pdb; pdb.set_trace()
         return b''.join(data)
 
     def __repr__(self):
