@@ -894,16 +894,16 @@ class SpecSanityChecks(TestCase):
     def test_bytespec(self):
         from mutagen.id3 import ByteSpec
         s = ByteSpec('name')
-        self.assertEquals((97, 'bcdefg'), s.read(None, 'abcdefg'))
-        self.assertEquals('a', s.write(None, 97))
+        self.assertEquals((97, b'bcdefg'), s.read(None, b'abcdefg'))
+        self.assertEquals(b'a', s.write(None, 97))
         self.assertRaises(TypeError, s.write, None, 'abc')
         self.assertRaises(TypeError, s.write, None, None)
 
     def test_encodingspec(self):
         from mutagen.id3 import EncodingSpec
         s = EncodingSpec('name')
-        self.assertEquals((0, 'abcdefg'), s.read(None, 'abcdefg'))
-        self.assertEquals((3, 'abcdefg'), s.read(None, b'\x03abcdefg'))
+        self.assertEquals((0, b'abcdefg'), s.read(None, b'abcdefg'))
+        self.assertEquals((3, b'abcdefg'), s.read(None, b'\x03abcdefg'))
         self.assertEquals(b'\x00', s.write(None, 0))
         self.assertRaises(TypeError, s.write, None, 'abc')
         self.assertRaises(TypeError, s.write, None, None)
@@ -911,42 +911,42 @@ class SpecSanityChecks(TestCase):
     def test_stringspec(self):
         from mutagen.id3 import StringSpec
         s = StringSpec('name', 3)
-        self.assertEquals(('abc', 'defg'),  s.read(None, 'abcdefg'))
-        self.assertEquals('abc', s.write(None, 'abcdefg'))
+        self.assertEquals((b'abc', b'defg'),  s.read(None, b'abcdefg'))
+        self.assertEquals(b'abc', s.write(None, 'abcdefg'))
         self.assertEquals(b'\x00\x00\x00', s.write(None, None))
         self.assertEquals(b'\x00\x00\x00', s.write(None, b'\x00'))
-        self.assertEquals('a\x00\x00', s.write(None, 'a'))
+        self.assertEquals(b'a\x00\x00', s.write(None, 'a'))
 
     def test_binarydataspec(self):
         from mutagen.id3 import BinaryDataSpec
         s = BinaryDataSpec('name')
-        self.assertEquals(('abcdefg', ''), s.read(None, 'abcdefg'))
-        self.assertEquals('None',  s.write(None, None))
-        self.assertEquals('43',  s.write(None, 43))
+        self.assertEquals((b'abcdefg', b''), s.read(None, b'abcdefg'))
+        self.assertEquals(None,  s.write(None, None))
+        self.assertEquals(43,  s.write(None, 43))
 
     def test_encodedtextspec(self):
         from mutagen.id3 import EncodedTextSpec, Frame
         s = EncodedTextSpec('name')
         f = Frame(); f.encoding = 0
-        self.assertEquals(('abcd', 'fg'), s.read(f, 'abcd\x00fg'))
-        self.assertEquals('abcdefg\x00', s.write(f, 'abcdefg'))
+        self.assertEquals(('abcd', b'fg'), s.read(f, b'abcd\x00fg'))
+        self.assertEquals(b'abcdefg\x00', s.write(f, 'abcdefg'))
         self.assertRaises(AttributeError, s.write, f, None)
 
     def test_timestampspec(self):
         from mutagen.id3 import TimeStampSpec, Frame, ID3TimeStamp
         s = TimeStampSpec('name')
         f = Frame(); f.encoding = 0
-        self.assertEquals((ID3TimeStamp('ab'), 'fg'), s.read(f, 'ab\x00fg'))
-        self.assertEquals((ID3TimeStamp('1234'), ''), s.read(f, '1234\x00'))
-        self.assertEquals('1234\x00', s.write(f, ID3TimeStamp('1234')))
+        self.assertEquals((ID3TimeStamp('ab'), b'fg'), s.read(f, b'ab\x00fg'))
+        self.assertEquals((ID3TimeStamp('1234'), b''), s.read(f, b'1234\x00'))
+        self.assertEquals(b'1234\x00', s.write(f, ID3TimeStamp('1234')))
         self.assertRaises(AttributeError, s.write, f, None)
 
     def test_volumeadjustmentspec(self):
         from mutagen.id3 import VolumeAdjustmentSpec
         s = VolumeAdjustmentSpec('gain')
-        self.assertEquals((0.0, ''), s.read(None, b'\x00\x00'))
-        self.assertEquals((2.0, ''), s.read(None, b'\x04\x00'))
-        self.assertEquals((-2.0, ''), s.read(None, b'\xfc\x00'))
+        self.assertEquals((0.0, b''), s.read(None, b'\x00\x00'))
+        self.assertEquals((2.0, b''), s.read(None, b'\x04\x00'))
+        self.assertEquals((-2.0, b''), s.read(None, b'\xfc\x00'))
         self.assertEquals(b'\x00\x00', s.write(None, 0.0))
         self.assertEquals(b'\x04\x00', s.write(None, 2.0))
         self.assertEquals(b'\xfc\x00', s.write(None, -2.0))
@@ -984,21 +984,21 @@ class FrameSanityChecks(TestCase):
         self.assert_(isinstance(TXXX(desc='d', text='text'), TXXX))
 
     def test_22_uses_direct_ints(self):
-        data = 'TT1\x00\x00\x83\x00' + ('123456789abcdef' * 16)
+        data = b'TT1\x00\x00\x83\x00' + (b'123456789abcdef' * 16)
         id3 = ID3()
         id3.version = (2, 2, 0)
         tag = list(id3._ID3__read_frames(data, Frames_2_2))[0]
         self.assertEquals(data[7:7+0x82].decode('latin1'), tag.text[0])
 
     def test_frame_too_small(self):
-        self.assertEquals([], list(_24._ID3__read_frames('012345678', Frames)))
-        self.assertEquals([], list(_23._ID3__read_frames('012345678', Frames)))
-        self.assertEquals([], list(_22._ID3__read_frames('01234', Frames_2_2)))
+        self.assertEquals([], list(_24._ID3__read_frames(b'012345678', Frames)))
+        self.assertEquals([], list(_23._ID3__read_frames(b'012345678', Frames)))
+        self.assertEquals([], list(_22._ID3__read_frames(b'01234', Frames_2_2)))
         self.assertEquals(
-            [], list(_22._ID3__read_frames('TT1'+b'\x00'*3, Frames_2_2)))
+            [], list(_22._ID3__read_frames(b'TT1'+b'\x00'*3, Frames_2_2)))
 
     def test_unknown_22_frame(self):
-        data = 'XYZ\x00\x00\x01\x00'
+        data = b'XYZ\x00\x00\x01\x00'
         self.assertEquals([data], list(_22._ID3__read_frames(data, {})))
 
 
@@ -1267,8 +1267,8 @@ class BrokenDiscarded(TestCase):
     def test_drops_truncated_frames(self):
         from mutagen.id3 import Frames
         id3 = ID3()
-        tail = b'\x00\x00\x00\x03\x00\x00' b'\x01\x02\x03'
-        for head in 'RVA2 TXXX APIC'.split():
+        tail = b'\x00\x00\x00\x03\x00\x00\x01\x02\x03'
+        for head in b'RVA2 TXXX APIC'.split():
             data = head + tail
             self.assertEquals(
                 0, len(list(id3._ID3__read_frames(data, Frames))))
@@ -1276,8 +1276,8 @@ class BrokenDiscarded(TestCase):
     def test_drops_nonalphanum_frames(self):
         from mutagen.id3 import Frames
         id3 = ID3()
-        tail = b'\x00\x00\x00\x03\x00\x00' b'\x01\x02\x03'
-        for head in [b'\x06\xaf\xfe\x20', 'ABC\x00', 'A   ']:
+        tail = b'\x00\x00\x00\x03\x00\x00\x01\x02\x03'
+        for head in [b'\x06\xaf\xfe\x20', b'ABC\x00', b'A   ']:
             data = head + tail
             self.assertEquals(
                 0, len(list(id3._ID3__read_frames(data, Frames))))
@@ -1293,7 +1293,7 @@ class BrokenButParsed(TestCase):
 
     def test_missing_encoding(self):
         from mutagen.id3 import TIT2
-        tag = TIT2.fromData(_23, 0x00, 'a test')
+        tag = TIT2.fromData(_23, 0x00, b'a test')
         self.assertEquals(0, tag.encoding)
         self.assertEquals('a test', tag)
         self.assertEquals(['a test'], tag)
@@ -1303,7 +1303,7 @@ class BrokenButParsed(TestCase):
         from mutagen.id3 import Frames
         id3 = ID3()
         tail = b'\x00' * 6
-        for head in 'WOAR TENC TCOP TOPE WXXX'.split():
+        for head in b'WOAR TENC TCOP TOPE WXXX'.split():
             data = head + tail
             self.assertEquals(
                 0, len(list(id3._ID3__read_frames(data, Frames))))
@@ -1329,7 +1329,7 @@ class BrokenButParsed(TestCase):
         data = id3._ID3__save_frame(tpe1)
         datalen_size = data[4 + 4 + 2:4 + 4 + 2 + 4]
         self.failIf(
-            max(datalen_size) >= b'\x80', "data is not syncsafe: %r" % data)
+            max(datalen_size) >= 128, "data is not syncsafe: %r" % data)
 
     def test_fake_zlib_nopedantic(self):
         from mutagen.id3 import TPE1, Frame, ID3BadCompressedData
@@ -1354,24 +1354,24 @@ class BrokenButParsed(TestCase):
 
     def test_detect_23_ints_in_24_frames(self):
         from mutagen.id3 import Frames
-        head = 'TIT1\x00\x00\x01\x00\x00\x00\x00'
-        tail = 'TPE1\x00\x00\x00\x04\x00\x00Yay!'
+        head = b'TIT1\x00\x00\x01\x00\x00\x00\x00'
+        tail = b'TPE1\x00\x00\x00\x04\x00\x00Yay!'
 
-        tagsgood = list(_24._ID3__read_frames(head + 'a'*127 + tail, Frames))
-        tagsbad = list(_24._ID3__read_frames(head + 'a'*255 + tail, Frames))
+        tagsgood = list(_24._ID3__read_frames(head + b'a'*127 + tail, Frames))
+        tagsbad = list(_24._ID3__read_frames(head + b'a'*255 + tail, Frames))
         self.assertEquals(2, len(tagsgood))
         self.assertEquals(2, len(tagsbad))
-        self.assertEquals('a'*127, tagsgood[0])
-        self.assertEquals('a'*255, tagsbad[0])
-        self.assertEquals('Yay!', tagsgood[1])
-        self.assertEquals('Yay!', tagsbad[1])
+        self.assertEquals(b'a'*127, tagsgood[0])
+        self.assertEquals(b'a'*255, tagsbad[0])
+        self.assertEquals(b'Yay!', tagsgood[1])
+        self.assertEquals(b'Yay!', tagsbad[1])
 
-        tagsgood = list(_24._ID3__read_frames(head + 'a'*127, Frames))
-        tagsbad = list(_24._ID3__read_frames(head + 'a'*255, Frames))
+        tagsgood = list(_24._ID3__read_frames(head + b'a'*127, Frames))
+        tagsbad = list(_24._ID3__read_frames(head + b'a'*255, Frames))
         self.assertEquals(1, len(tagsgood))
         self.assertEquals(1, len(tagsbad))
-        self.assertEquals('a'*127, tagsgood[0])
-        self.assertEquals('a'*255, tagsbad[0])
+        self.assertEquals(b'a'*127, tagsgood[0])
+        self.assertEquals(b'a'*255, tagsbad[0])
 
 
 class TimeStamp(TestCase):

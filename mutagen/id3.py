@@ -309,7 +309,7 @@ class ID3(DictProxy, mutagen.Metadata):
                 framedata = data[10:10+size]
                 data = data[10+size:]
                 if size == 0: continue # drop empty frames
-                try: tag = frames[name.decode()]
+                try: tag = frames[name.decode(errors="replace")]
                 except KeyError: 
                     if is_valid_frame_id(name): yield header + framedata
                 else:
@@ -638,16 +638,16 @@ class unsynch(object):
         for val in value:
             if safe:
                 append(val)
-                if val == b'\xFF': safe = False
-            elif val == b'\x00' or val >= b'\xE0':
-                append(b'\x00')
+                if val == 255: safe = False
+            elif val == 0 or val >= 224:
+                append(0)
                 append(val)
-                safe = val != b'\xFF'
+                safe = val != 255
             else:
                 append(val)
                 safe = True
-        if not safe: append(b'\x00')
-        return ''.join(output)
+        if not safe: append(0)
+        return bytes(output)
     encode = staticmethod(encode)
 
 class Spec(object):
