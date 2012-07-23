@@ -916,7 +916,7 @@ class SynchronizedTextSpec(EncodedTextSpec):
         for text, time in frame.text:
             text = text.encode(encoding) + term
             data.append(text + struct.pack(">I", time))
-        return "".join(data)
+        return b"".join(data)
 
     def validate(self, frame, value):
         return value
@@ -930,7 +930,7 @@ class KeyEventSpec(Spec):
         return events, data
 
     def write(self, frame, value):
-        return "".join([struct.pack(">bI", *event) for event in value])
+        return b"".join(struct.pack(">bI", *event) for event in value)
 
     def validate(self, frame, value):
         return value
@@ -950,8 +950,8 @@ class VolumeAdjustmentsSpec(Spec):
 
     def write(self, frame, value):
         value.sort()
-        return "".join([struct.pack(">Hh", int(freq * 2), int(adj * 512))
-                        for (freq, adj) in value])
+        return b"".join(struct.pack(">Hh", int(freq * 2), int(adj * 512))
+                        for (freq, adj) in value)
 
     def validate(self, frame, value):
         return value
