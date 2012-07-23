@@ -326,7 +326,7 @@ class ID3(DictProxy, mutagen.Metadata):
                 framedata = data[6:6+size]
                 data = data[6+size:]
                 if size == 0: continue # drop empty frames
-                try: tag = frames[name]
+                try: tag = frames[name.decode()]
                 except KeyError:
                     if is_valid_frame_id(name): yield header + framedata
                 else:
@@ -483,10 +483,10 @@ class ID3(DictProxy, mutagen.Metadata):
         try:
             if str(self.get("TYER", "")).strip("\x00"):
                 date = str(self.pop("TYER"))
-                if str(self.get("TDAT", "")).strip(b"\x00"):
+                if str(self.get("TDAT", "")).strip("\x00"):
                     dat = str(self.pop("TDAT"))
                     date = "%s-%s-%s" % (date, dat[2:], dat[:2])
-                    if str(self.get("TIME", "")).strip(b"\x00"):
+                    if str(self.get("TIME", "")).strip("\x00"):
                         time = str(self.pop("TIME"))
                         date += "T%s:%s:00" % (time[:2], time[2:])
                 if "TDRC" not in self:
@@ -621,13 +621,13 @@ class unsynch(object):
         for val in value:
             if safe:
                 append(val)
-                safe = val != b'\xFF'
+                safe = val != 255
             else:
-                if val >= b'\xE0': raise ValueError('invalid sync-safe string')
-                elif val != b'\x00': append(val)
+                if val >= 224: raise ValueError('invalid sync-safe string')
+                elif val != 0: append(val)
                 safe = True
         if not safe: raise ValueError('string ended unsafe')
-        return ''.join(output)
+        return bytes(output)
     decode = staticmethod(decode)
 
     def encode(value):
@@ -660,7 +660,7 @@ class ByteSpec(Spec):
 
 class IntegerSpec(Spec):
     def read(self, frame, data):
-        return int(BitPaddedInt(data, bits=8)), ''
+        return int(BitPaddedInt(data, bits=8)), b''
     def write(self, frame, value):
         return BitPaddedInt.to_str(value, bits=8, width=-1)
     def validate(self, frame, value):
@@ -694,15 +694,20 @@ class StringSpec(Spec):
     def read(s, frame, data): return data[:s.len], data[s.len:]
     def write(s, frame, value):
         if value is None: return b'\x00' * s.len
-        else: return (str(value) + b'\x00' * s.len)[:s.len]
+        elif isinstance(value, bytes): return (value + b'\x00' * s.len)[:s.len]
+        else: return (value.encode() + b'\x00' * s.len)[:s.len]
     def validate(s, frame, value):
         if value is None: return None
-        if isinstance(value, str) and len(value) == s.len: return value
+        if isinstance(value, (str, bytes)) and len(value) == s.len: return value
         raise ValueError('Invalid StringSpec[%d] data: %r' % (s.len, value))
 
 class BinaryDataSpec(Spec):
     def read(self, frame, data): return data, b''
-    def write(self, frame, value): return value
+    def write(self, frame, value):
+        if isinstance(value, str):
+            return value.encode()
+        else:
+            return value
     def validate(self, frame, value): return value
 
 class EncodedTextSpec(Spec):
@@ -783,7 +788,7 @@ class EncodedNumericPartTextSpec(EncodedTextSpec): pass
 class Latin1TextSpec(EncodedTextSpec):
     def read(self, frame, data):
         if b'\x00' in data: data, ret = data.split(b'\x00', 1)
-        else: ret = ''
+        else: ret = b''
         return data.decode('latin1'), ret
 
     def write(self, data, value):
@@ -895,7 +900,7 @@ class SynchronizedTextSpec(EncodedTextSpec):
             time, = struct.unpack(">I", data[value_idx+l:value_idx+l+4])
             texts.append((value, time))
             data = data[value_idx+l+4:]
-        return texts, ""
+        return texts, b""
 
     def write(self, frame, value):
         data = []
@@ -1070,12 +1075,12 @@ class Frame(object):
             if tflags & Frame.FLAG24_ENCRYPT:
                 raise ID3EncryptionUnsupportedError
             if tflags & Frame.FLAG24_COMPRESS:
-                try: data = data.decode('zlib')
+                try: data = data.decode('zlib').encode()
                 except zlibError as err:
                     # the initial mutagen that went out with QL 0.12 did not
                     # write the 4 bytes of uncompressed size. Compensate.
                     data = datalen_bytes + data
-                    try: data = data.decode('zlib')
+                    try: data = data.decode('zlib').encode()
                     except zlibError as err:
                         if id3.PEDANTIC:
                             raise ID3BadCompressedData('%s: %r' % (err, data))
@@ -1087,7 +1092,7 @@ class Frame(object):
             if tflags & Frame.FLAG23_ENCRYPT:
                 raise ID3EncryptionUnsupportedError
             if tflags & Frame.FLAG23_COMPRESS:
-                try: data = data.decode('zlib')
+                try: data = data.decode('zlib').encode()
                 except zlibError as err:
                     if id3.PEDANTIC:
                         raise ID3BadCompressedData('%s: %r' % (err, data))
@@ -1141,7 +1146,9 @@ class FrameOpt(Frame):
         for writer in self._optionalspec:
             try: data.append(writer.write(self, getattr(self, writer.name)))
             except AttributeError: break
-        return ''.join(data)
+        #if any(map(lambda x:not isinstance(x,bytes),data)):
+            #import pdb; pdb.set_trace()
+        return b''.join(data)
 
     def __repr__(self):
         kw = []
@@ -1173,7 +1180,7 @@ class TextFrame(Frame):
     def __str__(self): return '\u0000'.join(self.text)
     def __eq__(self, other):
         if isinstance(other, str): return str(self) == other
-        elif isinstance(other, str): return str(self) == other
+        elif isinstance(other, bytes): return str(self).encode() == other
         return self.text == other
     __hash__ = Frame.__hash__
     def __getitem__(self, item): return self.text[item]
@@ -1239,7 +1246,8 @@ class UrlFrame(Frame):
 
     _framespec = [ Latin1TextSpec('url') ]
     def __str__(self): return self.url
-    def __eq__(self, other): return self.url == other
+    def __eq__(self, other):
+        return self.url == other or self.url.encode() == other
     __hash__ = Frame.__hash__
     def _pprint(self): return self.url
 
@@ -1459,7 +1467,8 @@ class USLT(Frame):
     HashKey = property(lambda s: '%s:%s:%r' % (s.FrameID, s.desc, s.lang))
 
     def __str__(self): return self.text
-    def __eq__(self, other): return self.text == other
+    def __eq__(self, other):
+        return self.text == other or self.text.encode() == other
     __hash__ = Frame.__hash__
     
 class SYLT(Frame):
@@ -1471,11 +1480,11 @@ class SYLT(Frame):
     HashKey = property(lambda s: '%s:%s:%r' % (s.FrameID, s.desc, s.lang))
 
     def __eq__(self, other):
-        return str(self) == other
+        return str(self) == other or str(self).encode() == other
     __hash__ = Frame.__hash__
 
     def __str__(self):
-        return "".join([text for (text, time) in self.text]).encode('utf-8')
+        return "".join([text for (text, time) in self.text])
 
 class COMM(TextFrame):
     """User comment.
@@ -1515,6 +1524,7 @@ class RVA2(Frame):
 
     def __eq__(self, other):
         return ((str(self) == other) or
+                (str(self).encode() == other) or
                 (self.desc == other.desc and
                  self.channel == other.channel and
                  self.gain == other.gain and
@@ -1666,7 +1676,8 @@ class AENC(FrameOpt):
     HashKey = property(lambda s: '%s:%s' % (s.FrameID, s.owner))
 
     def __str__(self): return self.owner
-    def __eq__(self, other): return self.owner == other
+    def __eq__(self, other):
+        return self.owner == other or self.owner.encode() == other
     __hash__ = FrameOpt.__hash__
 
 class LINK(FrameOpt):
@@ -1688,8 +1699,8 @@ class LINK(FrameOpt):
             return "%s:%s:%s" % (self.FrameID, self.frameid, self.url)
     HashKey = property(__HashKey)
     def __eq__(self, other):
-        try: return (self.frameid, self.url, self.data) == other
-        except AttributeError: return (self.frameid, self.url) == other
+        try: return (self.frameid.decode(), self.url, self.data.decode()) == other
+        except AttributeError: return (self.frameid.decode(), self.url) == other
     __hash__ = FrameOpt.__hash__
 
 class POSS(Frame):
@@ -1737,7 +1748,8 @@ class USER(Frame):
     HashKey = property(lambda s: '%s:%r' % (s.FrameID, s.lang))
 
     def __str__(self): return self.text
-    def __eq__(self, other): return self.text == other
+    def __eq__(self, other):
+        return self.text == other or self.text.encode() == other
     __hash__ = Frame.__hash__
     def _pprint(self): return "%r=%s" % (self.lang, self.text)
 
@@ -1747,7 +1759,8 @@ class OWNE(Frame):
                    StringSpec('date', 8), EncodedTextSpec('seller') ]
 
     def __str__(self): return self.seller
-    def __eq__(self, other): return self.seller == other
+    def __eq__(self, other): 
+        return self.seller == other or self.seller.encode() == other
     __hash__ = Frame.__hash__
 
 class COMR(FrameOpt):
@@ -1770,7 +1783,7 @@ class ENCR(Frame):
     _framespec = [ Latin1TextSpec('owner'), ByteSpec('method'),
                    BinaryDataSpec('data') ]
     HashKey = property(lambda s: "%s:%s" % (s.FrameID, s.owner))
-    def __str__(self): return self.data
+    def __str__(self): return self.data.decode()
     def __eq__(self, other): return self.data == other
     __hash__ = Frame.__hash__
 
@@ -1781,7 +1794,10 @@ class GRID(FrameOpt):
     HashKey = property(lambda s: '%s:%s' % (s.FrameID, s.group))
     def __pos__(self): return self.group
     def __str__(self): return self.owner
-    def __eq__(self, other): return self.owner == other or self.group == other
+    def __eq__(self, other):
+        return self.owner == other or \
+            self.owner.encode() == other or \
+            self.group == other
     __hash__ = FrameOpt.__hash__
     
 
@@ -1790,7 +1806,7 @@ class PRIV(Frame):
     _framespec = [ Latin1TextSpec('owner'), BinaryDataSpec('data') ]
     HashKey = property(lambda s: '%s:%s:%s' % (
         s.FrameID, s.owner, s.data.decode('latin1')))
-    def __str__(self): return self.data
+    def __str__(self): return self.data.decode()
     def __eq__(self, other): return self.data == other
     def _pprint(self):
         isascii = max(self.data) < 128
@@ -1979,8 +1995,8 @@ def MakeID3v1(id3):
 
     v1 = {}
 
-    for v2id, name in list({"TIT2": "title", "TPE1": "artist",
-                       "TALB": "album"}.items()):
+    for v2id, name in {"TIT2": "title", "TPE1": "artist",
+                       "TALB": "album"}.items():
         if v2id in id3:
             text = id3[v2id].text[0].encode('latin1', 'replace')[:30]
         else:
@@ -1994,7 +2010,7 @@ def MakeID3v1(id3):
     v1["comment"] = cmnt + (b"\x00" * (29 - len(cmnt)))
 
     if "TRCK" in id3:
-        try: v1["track"] = chr(+id3["TRCK"])
+        try: v1["track"] = bytes([+id3["TRCK"]])
         except ValueError: v1["track"] = b"\x00"
     else: v1["track"] = b"\x00"
 

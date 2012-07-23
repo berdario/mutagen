@@ -389,12 +389,12 @@ class TestWriteID3v1(TestCase):
     def failIfV1(self):
         fileobj = open(self.filename, "rb")
         fileobj.seek(-128, 2)
-        self.failIf(fileobj.read(3) == "TAG")
+        self.failIf(fileobj.read(3) == b"TAG")
 
     def failUnlessV1(self):
         fileobj = open(self.filename, "rb")
         fileobj.seek(-128, 2)
-        self.failUnless(fileobj.read(3) == "TAG")
+        self.failUnless(fileobj.read(3) == b"TAG")
 
     def test_save_delete(self):
         self.audio.save(v1=0)
@@ -495,14 +495,14 @@ def TestReadTags():
     ['TXXX', b'\x00usr\x00a/b\x00c', ['a/b', 'c'], '',
      dict(encoding=0, desc='usr')],
 
-    ['WCOM', 'http://foo', 'http://foo', '', {}],
-    ['WCOP', 'http://bar', 'http://bar', '', {}],
-    ['WOAF', 'http://baz', 'http://baz', '', {}],
-    ['WOAR', 'http://bar', 'http://bar', '', {}],
-    ['WOAS', 'http://bar', 'http://bar', '', {}],
-    ['WORS', 'http://bar', 'http://bar', '', {}],
-    ['WPAY', 'http://bar', 'http://bar', '', {}],
-    ['WPUB', 'http://bar', 'http://bar', '', {}],
+    ['WCOM', b'http://foo', 'http://foo', '', {}],
+    ['WCOP', b'http://bar', 'http://bar', '', {}],
+    ['WOAF', b'http://baz', 'http://baz', '', {}],
+    ['WOAR', b'http://bar', 'http://bar', '', {}],
+    ['WOAS', b'http://bar', 'http://bar', '', {}],
+    ['WORS', b'http://bar', 'http://bar', '', {}],
+    ['WPAY', b'http://bar', 'http://bar', '', {}],
+    ['WPUB', b'http://bar', 'http://bar', '', {}],
 
     ['WXXX', b'\x00usr\x00http', 'http', '', dict(encoding=0, desc='usr')],
 
@@ -523,29 +523,29 @@ def TestReadTags():
         dict(mime='-->', type=3, desc='cover', encoding=0)],
     ['USER', b'\x00ENUCom', 'Com', '', dict(lang='ENU', encoding=0)],
 
-    ['RVA2', 'testdata\x00\x01\xfb\x8c\x10\x12\x23',
+    ['RVA2', b'testdata\x00\x01\xfb\x8c\x10\x12\x23',
         'Master volume: -2.2266 dB/0.1417', '',
         dict(desc='testdata', channel=1, gain=-2.22656, peak=0.14169)],
 
-    ['RVA2', 'testdata\x00\x01\xfb\x8c\x24\x01\x22\x30\x00\x00',
+    ['RVA2', b'testdata\x00\x01\xfb\x8c\x24\x01\x22\x30\x00\x00',
         'Master volume: -2.2266 dB/0.1417', '',
         dict(desc='testdata', channel=1, gain=-2.22656, peak=0.14169)],
 
-    ['RVA2', 'testdata2\x00\x01\x04\x01\x00',
+    ['RVA2', b'testdata2\x00\x01\x04\x01\x00',
         'Master volume: +2.0020 dB/0.0000', '',
         dict(desc='testdata2', channel=1, gain=2.001953125, peak=0)],
 
     ['PCNT', b'\x00\x00\x00\x11', 17, 17, dict(count=17)],
-    ['POPM', 'foo@bar.org\x00\xde\x00\x00\x00\x11', 222, 222,
+    ['POPM', b'foo@bar.org\x00\xde\x00\x00\x00\x11', 222, 222,
         dict(email="foo@bar.org", rating=222, count=17)],
-    ['POPM', 'foo@bar.org\x00\xde\x00', 222, 222,
+    ['POPM', b'foo@bar.org\x00\xde\x00', 222, 222,
         dict(email="foo@bar.org", rating=222, count=0)],
     # Issue #33 - POPM may have no playcount at all.
-    ['POPM', 'foo@bar.org\x00\xde', 222, 222,
+    ['POPM', b'foo@bar.org\x00\xde', 222, 222,
         dict(email="foo@bar.org", rating=222)],
 
-    ['UFID', 'own\x00data', 'data', '', dict(data='data', owner='own')],
-    ['UFID', 'own\x00\xdd', b'\xdd', '', dict(data=b'\xdd', owner='own')],
+    ['UFID', b'own\x00data', 'data', '', dict(data='data', owner='own')],
+    ['UFID', b'own\x00\xdd', b'\xdd', '', dict(data=b'\xdd', owner='own')],
 
     ['GEOB', b'\x00mime\x00name\x00desc\x00data', 'data', '',
         dict(encoding=0, mime='mime', filename='name', desc='desc')],
@@ -561,13 +561,13 @@ def TestReadTags():
     ['OWNE', b'\x00USD10.01\x0020041010CDBaby', 'CDBaby', 'CDBaby',
      dict(encoding=0, price="USD10.01", date='20041010', seller='CDBaby')],
 
-    ['PRIV', 'a@b.org\x00random data', 'random data', 'random data',
+    ['PRIV', b'a@b.org\x00random data', 'random data', 'random data',
      dict(owner='a@b.org', data='random data')],
-    ['PRIV', 'a@b.org\x00\xdd', b'\xdd', b'\xdd',
+    ['PRIV', b'a@b.org\x00\xdd', b'\xdd', b'\xdd',
      dict(owner='a@b.org', data=b'\xdd')],
 
     ['SIGN', b'\x92huh?', 'huh?', 'huh?', dict(group=0x92, sig='huh?')],
-    ['ENCR', 'a@b.org\x00\x92Data!', 'Data!', 'Data!',
+    ['ENCR', b'a@b.org\x00\x92Data!', 'Data!', 'Data!',
      dict(owner='a@b.org', method=0x92, data='Data!')],
     ['SEEK', b'\x00\x12\x00\x56', 0x12*256*256+0x56, 0x12*256*256+0x56,
      dict(offset=0x12*256*256+0x56)],
@@ -584,14 +584,14 @@ def TestReadTags():
      (0x12*256+0x12, 0x23*256+0x23), '',
      dict(left=0x12*256+0x12, right=0x23*256+0x23) ],
 
-    ['AENC', 'a@b.org\x00\x00\x12\x00\x23', 'a@b.org', 'a@b.org',
+    ['AENC', b'a@b.org\x00\x00\x12\x00\x23', 'a@b.org', 'a@b.org',
      dict(owner='a@b.org', preview_start=0x12, preview_length=0x23)],
-    ['AENC', 'a@b.org\x00\x00\x12\x00\x23!', 'a@b.org', 'a@b.org',
+    ['AENC', b'a@b.org\x00\x00\x12\x00\x23!', 'a@b.org', 'a@b.org',
      dict(owner='a@b.org', preview_start=0x12, preview_length=0x23, data='!')],
 
-    ['GRID', 'a@b.org\x00\x99', 'a@b.org', 0x99,
+    ['GRID', b'a@b.org\x00\x99', 'a@b.org', 0x99,
      dict(owner='a@b.org', group=0x99)],
-    ['GRID', 'a@b.org\x00\x99data', 'a@b.org', 0x99,
+    ['GRID', b'a@b.org\x00\x99data', 'a@b.org', 0x99,
      dict(owner='a@b.org', group=0x99, data='data')],
 
     ['COMR', b'\x00USD10.00\x0020051010ql@sc.net\x00\x09Joe\x00A song\x00'
@@ -624,16 +624,16 @@ def TestReadTags():
     ['ASPI', b'\x00\x00\x00\x00\x00\x00\x00\x10\x00\x03\x10'
      b'\x00\x01\x00\x02\x00\x03', [1, 2, 3], '', dict(S=0, L=16, N=3, b=16)],
 
-    ['LINK', 'TIT1http://www.example.org/TIT1.txt\x00',
+    ['LINK', b'TIT1http://www.example.org/TIT1.txt\x00',
      ("TIT1", 'http://www.example.org/TIT1.txt'), '',
      dict(frameid='TIT1', url='http://www.example.org/TIT1.txt')],
-    ['LINK', 'COMMhttp://www.example.org/COMM.txt\x00engfoo',
+    ['LINK', b'COMMhttp://www.example.org/COMM.txt\x00engfoo',
      ("COMM", 'http://www.example.org/COMM.txt', 'engfoo'), '',
      dict(frameid='COMM', url='http://www.example.org/COMM.txt',
           data='engfoo')],
 
     # 2.2 tags
-    ['UFI', 'own\x00data', 'data', '', dict(data='data', owner='own')],
+    ['UFI', b'own\x00data', 'data', '', dict(data='data', owner='own')],
     ['SLT', (b'\x00eng\x02\x01some lyrics\x00foo\x00\x00\x00\x00\x01bar'
               b'\x00\x00\x00\x00\x10'), "foobar", '',
      dict(encoding=0, lang='eng', type=1, format=2, desc='some lyrics')],
@@ -676,12 +676,12 @@ def TestReadTags():
     ['TOR', b'\x001877', '1877', 1877, dict(encoding=0)],
     ['TXX', b'\x00desc\x00val', 'val', '', dict(encoding=0, desc='desc')],
 
-    ['WAF', 'http://zzz', 'http://zzz', '', {}],
-    ['WAR', 'http://zzz', 'http://zzz', '', {}],
-    ['WAS', 'http://zzz', 'http://zzz', '', {}],
-    ['WCM', 'http://zzz', 'http://zzz', '', {}],
-    ['WCP', 'http://zzz', 'http://zzz', '', {}],
-    ['WPB', 'http://zzz', 'http://zzz', '', {}],
+    ['WAF', b'http://zzz', 'http://zzz', '', {}],
+    ['WAR', b'http://zzz', 'http://zzz', '', {}],
+    ['WAS', b'http://zzz', 'http://zzz', '', {}],
+    ['WCM', b'http://zzz', 'http://zzz', '', {}],
+    ['WCP', b'http://zzz', 'http://zzz', '', {}],
+    ['WPB', b'http://zzz', 'http://zzz', '', {}],
     ['WXX', b'\x00desc\x00http', 'http', '', dict(encoding=0, desc='desc')],
 
     ['IPL', b'\x00a\x00A\x00b\x00B\x00', [['a', 'A'], ['b', 'B']], '',
@@ -695,7 +695,7 @@ def TestReadTags():
     ['PIC', b'\x00-->\x03cover\x00cover.jpg', 'cover.jpg', '',
         dict(mime='-->', type=3, desc='cover', encoding=0)],
 
-    ['POP', 'foo@bar.org\x00\xde\x00\x00\x00\x11', 222, 222,
+    ['POP', b'foo@bar.org\x00\xde\x00\x00\x00\x11', 222, 222,
         dict(email="foo@bar.org", rating=222, count=17)],
     ['CNT', b'\x00\x00\x00\x11', 17, 17, dict(count=17)],
     ['GEO', b'\x00mime\x00name\x00desc\x00data', 'data', '',
@@ -705,9 +705,9 @@ def TestReadTags():
 
     ['BUF', b'\x00\x12\x00', 0x12*256, 0x12*256, dict(size=0x12*256)],
 
-    ['CRA', 'a@b.org\x00\x00\x12\x00\x23', 'a@b.org', 'a@b.org',
+    ['CRA', b'a@b.org\x00\x00\x12\x00\x23', 'a@b.org', 'a@b.org',
      dict(owner='a@b.org', preview_start=0x12, preview_length=0x23)],
-    ['CRA', 'a@b.org\x00\x00\x12\x00\x23!', 'a@b.org', 'a@b.org',
+    ['CRA', b'a@b.org\x00\x00\x12\x00\x23!', 'a@b.org', 'a@b.org',
      dict(owner='a@b.org', preview_start=0x12, preview_length=0x23, data='!')],
 
     ['REV', b'\x12\x12\x23\x23\x0a\x0b\x0c\x0d\x0e\x0f\x10\x11',
@@ -719,10 +719,10 @@ def TestReadTags():
     ['MLL', b'\x00\x01\x00\x00\x02\x00\x00\x03\x04\x08foobar', 'foobar', '',
      dict(frames=1, bytes=2, milliseconds=3, bits_for_bytes=4,
           bits_for_milliseconds=8, data='foobar')],
-    ['LNK', 'TT1http://www.example.org/TIT1.txt\x00',
+    ['LNK', b'TT1http://www.example.org/TIT1.txt\x00',
      ("TT1", 'http://www.example.org/TIT1.txt'), '',
      dict(frameid='TT1', url='http://www.example.org/TIT1.txt')],
-    ['CRM', 'foo@example.org\x00test\x00woo',
+    ['CRM', b'foo@example.org\x00test\x00woo',
      'woo', '', dict(owner='foo@example.org', desc='test', data='woo')],
 
     ]
@@ -741,6 +741,8 @@ def TestReadTags():
             tag = TAG.fromData(_23, 0, data)
             self.failUnless(tag.HashKey)
             self.failUnless(tag.pprint())
+            if isinstance(value, str):
+                value = value.encode()
             self.assertEquals(value, tag)
             if 'encoding' not in info:
                 self.assertRaises(AttributeError, getattr, tag, 'encoding')
@@ -752,7 +754,15 @@ def TestReadTags():
                 for value, t in zip(value, iter(t)):
                     if isinstance(value, float):
                         self.failUnlessAlmostEqual(value, getattr(t, attr), 5)
-                    else: self.assertEquals(value, getattr(t, attr))
+                    else:
+                        if isinstance(value, str) and isinstance(getattr(t, attr), bytes):
+                            # FIXME: since we're directly loading the data
+                            # inside the tag objects, the easiest way is to
+                            # store it and return it as bytes, but here it
+                            # means that we have to encode each time
+                            # before comparing
+                            value = value.encode()
+                        self.assertEquals(value, getattr(t, attr))
 
                     if isinstance(intval, int):
                         self.assertEquals(intval, pos(t))
