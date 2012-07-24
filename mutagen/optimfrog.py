@@ -38,7 +38,7 @@ class OptimFROGInfo(object):
 
     def __init__(self, fileobj):
         header = fileobj.read(76)
-        if (len(header) != 76 or not header.startswith("OFR ") or
+        if (len(header) != 76 or not header.startswith(b"OFR ") or
             struct.unpack("<I", header[4:8])[0] not in [12, 15]):
             raise OptimFROGHeaderError("not an OptimFROG file")
         (total_samples, total_samples_high, sample_type, self.channels,
@@ -59,6 +59,6 @@ class OptimFROG(APEv2File):
     _Info = OptimFROGInfo
 
     def score(filename, fileobj, header):
-        return (header.startswith("OFR") + filename.endswith(".ofr") +
+        return (header.startswith(b"OFR") + filename.endswith(".ofr") +
                 filename.endswith(".ofs"))
     score = staticmethod(score)

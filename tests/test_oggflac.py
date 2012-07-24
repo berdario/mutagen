@@ -29,7 +29,7 @@ class TOggFLAC(TOggFileType):
 
     def test_streaminfo_bad_marker(self):
         page = OggPage(open(self.filename, "rb")).write()
-        page = page.replace("fLaC", "!fLa", 1)
+        page = page.replace(b"fLaC", b"!fLa", 1)
         self.failUnlessRaises(IOError, OggFLACStreamInfo, BytesIO(page))
 
     def test_streaminfo_bad_version(self):

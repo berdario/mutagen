@@ -57,7 +57,7 @@ class TAtoms(TestCase):
         self.failUnlessRaises(KeyError, self.atoms.__getitem__, "whee")
 
     def test_name(self):
-        self.failUnlessEqual(self.atoms.atoms[0].name, "ftyp")
+        self.failUnlessEqual(self.atoms.atoms[0].name, b"ftyp")
 
     def test_children(self):
         self.failUnless(self.atoms.atoms[2].children)

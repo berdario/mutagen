@@ -42,8 +42,8 @@ warnings.warn(
 
 # This is not an exhaustive list of container atoms, but just the
 # ones this module needs to peek inside.
-_CONTAINERS = ["moov", "udta", "trak", "mdia", "meta", "ilst",
-               "stbl", "minf", "stsd"]
+_CONTAINERS = [b"moov", b"udta", b"trak", b"mdia", b"meta", b"ilst",
+               b"stbl", b"minf", b"stsd"]
 _SKIP_SIZE = { "meta": 4 }
 
 __all__ = ['M4A', 'Open', 'delete', 'M4ACover']
@@ -100,6 +100,7 @@ class Atom(object):
         """Render raw atom data."""
         # this raises OverflowError if Py_ssize_t can't handle the atom data
         size = len(data) + 8
+        name, data = name.encode(), data.encode()
         if size <= 0xFFFFFFFF:
             return struct.pack(">I4s", size, name) + data
         else:
@@ -116,7 +117,7 @@ class Atom(object):
         elif self.children is None:
             raise KeyError("%r is not a container" % self.name)
         for child in self.children:
-            if child.name == remaining[0]:
+            if child.name == remaining[0].encode():
                 return child[remaining[1:]]
         else:
             raise KeyError("%r not found" % remaining[0])
@@ -169,7 +170,7 @@ class Atoms(object):
         if isinstance(names, str):
             names = names.split(".")
         for child in self.atoms:
-            if child.name == names[0]:
+            if child.name == names[0].encode():
                 return child[names[1:]]
         else:
             raise KeyError("%s not found" % names[0])
