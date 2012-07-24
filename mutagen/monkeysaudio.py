@@ -38,7 +38,7 @@ class MonkeysAudioInfo(object):
 
     def __init__(self, fileobj):
         header = fileobj.read(76)
-        if len(header) != 76 or not header.startswith("MAC "):
+        if len(header) != 76 or not header.startswith(b"MAC "):
             raise MonkeysAudioHeaderError("not a Monkey's Audio file")
         self.version = cdata.ushort_le(header[4:6])
         if self.version >= 3980:

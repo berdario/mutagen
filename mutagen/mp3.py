@@ -86,7 +86,7 @@ class MPEGInfo(object):
             try: id3, insize = struct.unpack('>3sxxx4s', idata)
             except struct.error: id3, insize = '', 0
             insize = BitPaddedInt(insize)
-            if id3 == 'ID3' and insize > 0:
+            if id3 == b'ID3' and insize > 0:
                 offset = insize
             else: offset = 0
 
@@ -113,7 +113,7 @@ class MPEGInfo(object):
         # is horribly wrong (the longest frame can only be about 4k). This
         # is assuming the offset didn't lie.
         data = fileobj.read(32768)
-
+        
         frame_1 = data.find(b"\xff")
         while 0 <= frame_1 <= len(data) - 4:
             frame_data = struct.unpack(">I", data[frame_1:frame_1 + 4])[0]
@@ -151,13 +151,13 @@ class MPEGInfo(object):
         self.sample_rate = self.__RATES[self.version][sample_rate]
 
         if self.layer == 1:
-            frame_length = (12 * self.bitrate / self.sample_rate + padding) * 4
+            frame_length = (12 * self.bitrate // self.sample_rate + padding) * 4
             frame_size = 384
         elif self.version >= 2 and self.layer == 3:
-            frame_length = 72 * self.bitrate / self.sample_rate + padding
+            frame_length = 72 * self.bitrate // self.sample_rate + padding
             frame_size = 576
         else:
-            frame_length = 144 * self.bitrate / self.sample_rate + padding
+            frame_length = 144 * self.bitrate // self.sample_rate + padding
             frame_size = 1152
 
         if check_second:
@@ -172,7 +172,7 @@ class MPEGInfo(object):
             if frame_data & 0xFFE0 != 0xFFE0:
                 raise HeaderNotFoundError("can't sync to second MPEG frame")
 
-        frame_count = real_size / float(frame_length)
+        frame_count = real_size / frame_length
         samples = frame_size * frame_count
         self.length = samples / self.sample_rate
 
@@ -181,12 +181,12 @@ class MPEGInfo(object):
         fileobj.seek(offset, 0)
         data = fileobj.read(32768)
         try:
-            xing = data[:-4].index("Xing")
+            xing = data[:-4].index(b"Xing")
         except ValueError:
             # Try to find/parse the VBRI header, which trumps the above length
             # calculation.
             try:
-                vbri = data[:-24].index("VBRI")
+                vbri = data[:-24].index(b"VBRI")
             except ValueError: pass
             else:
                 # If a VBRI header was found, this is definitely MPEG audio.
@@ -195,7 +195,7 @@ class MPEGInfo(object):
                 if vbri_version == 1:
                     frame_count = struct.unpack(
                         '>I', data[vbri + 14:vbri + 18])[0]
-                    samples = float(frame_size * frame_count)
+                    samples = frame_size * frame_count
                     self.length = (samples / self.sample_rate) or self.length
         else:
             # If a Xing header was found, this is definitely MPEG audio.
@@ -203,7 +203,7 @@ class MPEGInfo(object):
             flags = struct.unpack('>I', data[xing + 4:xing + 8])[0]
             if flags & 0x1:
                 frame_count = struct.unpack('>I', data[xing + 8:xing + 12])[0]
-                samples = float(frame_size * frame_count)
+                samples = frame_size * frame_count
                 self.length = (samples / self.sample_rate) or self.length
             if flags & 0x2:
                 byte = struct.unpack('>I', data[xing + 12:xing + 16])[0]
@@ -214,9 +214,9 @@ class MPEGInfo(object):
         # Don't do this for very small files.
         fileobj.seek(2, 0)
         size = fileobj.tell()
-        expected = (self.bitrate / 8) * self.length
-        if not (size / 2 < expected < size * 2) and size > 2**16:
-            self.length = size / float(self.bitrate * 8)
+        expected = (self.bitrate // 8) * self.length
+        if not (size // 2 < expected < size * 2) and size > 2**16:
+            self.length = size / (self.bitrate * 8)
 
     def pprint(self):
         s = "MPEG %s layer %d, %d bps, %s Hz, %.2f seconds" % (
