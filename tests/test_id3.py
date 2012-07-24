@@ -1223,7 +1223,7 @@ class Genres(TestCase):
         self.assertEquals(self._g("0\x00A genre"), ["Blues", "A genre"])
 
     def test_nullsep_empty(self):
-        self.assertEquals(self._g(b"\x000\x00A genre"), ["Blues", "A genre"])
+        self.assertEquals(self._g("\x000\x00A genre"), ["Blues", "A genre"])
 
     def test_crazy(self):
         self.assertEquals(
@@ -1459,11 +1459,11 @@ class OddWrites(TestCase):
     def test_1bfile(self):
         os.unlink(self.newsilence)
         f = open(self.newsilence, "wb")
-        f.write("!")
+        f.write(b"!")
         f.close()
         ID3(self.silence).save(self.newsilence)
         self.assert_(os.path.getsize(self.newsilence) > 1)
-        self.assertEquals(open(self.newsilence, "rb").read()[-1], "!")
+        self.assertEquals(open(self.newsilence, "rb").read()[-1], b"!"[0])
 
     def tearDown(self):
         try: os.unlink(self.newsilence)
@@ -1535,7 +1535,7 @@ class WriteRoundtrip(TestCase):
         id3 = ID3(self.newsilence)
         open(self.newsilence, 'wb').truncate()
         id3.save(self.newsilence)
-        self.assertEquals(b'ID3', open(self.newsilence, 'fb').read(3))
+        self.assertEquals(b'ID3', open(self.newsilence, 'rb').read(3))
         self.test_same()
 
     def test_empty_plustag_minustag_empty(self):
@@ -1568,11 +1568,11 @@ class WriteRoundtrip(TestCase):
         f["COMM"] = COMM(encoding=0, desc="x", text="y")
         f.save()
         data = open(self.newsilence, 'rb').read()
-        self.assert_(data.find("TIT2") < data.find("APIC"))
-        self.assert_(data.find("TIT2") < data.find("COMM"))
-        self.assert_(data.find("TALB") < data.find("APIC"))
-        self.assert_(data.find("TALB") < data.find("COMM"))
-        self.assert_(data.find("TIT2") < data.find("TALB"))
+        self.assert_(data.find(b"TIT2") < data.find(b"APIC"))
+        self.assert_(data.find(b"TIT2") < data.find(b"COMM"))
+        self.assert_(data.find(b"TALB") < data.find(b"APIC"))
+        self.assert_(data.find(b"TALB") < data.find(b"COMM"))
+        self.assert_(data.find(b"TIT2") < data.find(b"TALB"))
 
     def tearDown(self):
         try: os.unlink(self.newsilence)
@@ -1709,12 +1709,12 @@ class Issue69_BadV1Year(TestCase):
 
     def test_missing_year(self):
         from mutagen.id3 import ParseID3v1
-        tag = ParseID3v1('ABCTAGhello world\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff')
+        tag = ParseID3v1(b'ABCTAGhello world\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff')
         self.failUnlessEqual(tag["TIT2"], "hello world")
 
     def test_short_year(self):
         from mutagen.id3 import ParseID3v1
-        tag = ParseID3v1('XTAGhello world\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x001\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff')
+        tag = ParseID3v1(b'XTAGhello world\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x001\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff')
         self.failUnlessEqual(tag["TIT2"], "hello world")
         self.failUnlessEqual(tag["TDRC"], "0001")
 
