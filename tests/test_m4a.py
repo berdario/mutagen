@@ -26,10 +26,10 @@ class TAtom(TestCase):
         self.failUnlessRaises(IOError, Atom, fileobj)
 
     def test_render_too_big(self):
-        class TooBig(str):
+        class TooBig(bytes):
             def __len__(self):
                 return 1 << 32
-        data = TooBig("test")
+        data = TooBig(b"test")
         try: len(data)
         except OverflowError:
             # Py_ssize_t is still only 32 bits on this system.
@@ -80,7 +80,7 @@ class TM4AInfo(TestCase):
         mdhd = Atom.render("mdhd", (b"\x01\x00\x00\x00" + b"\x00" * 16 +
                                     b"\x00\x00\x00\x02" + # 2 Hz
                                     b"\x00\x00\x00\x00\x00\x00\x00\x10"))
-        hdlr = Atom.render("hdlr", soun)
+        hdlr = Atom.render("hdlr", soun.encode())
         mdia = Atom.render("mdia", mdhd + hdlr)
         trak = Atom.render("trak", mdia)
         moov = Atom.render("moov", trak)
@@ -101,8 +101,8 @@ class TM4ATags(TestCase):
         return M4ATags(Atoms(fileobj), fileobj)
         
     def test_bad_freeform(self):
-        mean = Atom.render("mean", "net.sacredchao.Mutagen")
-        name = Atom.render("name", "empty test key")
+        mean = Atom.render("mean", b"net.sacredchao.Mutagen")
+        name = Atom.render("name", b"empty test key")
         bad_freeform = Atom.render("----", b"\x00" * 4 + mean + name)
         self.failIf(self.wrap_ilst(bad_freeform))
 
@@ -116,8 +116,8 @@ class TM4ATags(TestCase):
     def test_empty_cpil(self):
         cpil = Atom.render("cpil", Atom.render("data", b"\x00" * 8))
         tags = self.wrap_ilst(cpil)
-        self.failUnless("cpil" in tags)
-        self.failIf(tags["cpil"])
+        self.failUnless(b"cpil" in tags)
+        self.failIf(tags[b"cpil"])
 
     def test_genre_too_big(self):
         data = Atom.render("data", b"\x00" * 8 + b"\x01\x00")
@@ -127,13 +127,13 @@ class TM4ATags(TestCase):
         self.failIf(b"\xa9gen" in tags)
 
     def test_strips_unknown_types(self):
-        data = Atom.render("data", b"\x00" * 8 + "whee")
+        data = Atom.render("data", b"\x00" * 8 + b"whee")
         foob = Atom.render("foob", data)
         tags = self.wrap_ilst(foob)
         self.failIf(tags)
 
     def test_bad_covr(self):
-        data = Atom.render("foob", b"\x00\x00\x00\x0E" + b"\x00" * 4 + "whee")
+        data = Atom.render("foob", b"\x00\x00\x00\x0E" + b"\x00" * 4 + b"whee")
         covr = Atom.render("covr", data)
         self.failUnlessRaises(M4AMetadataError, self.wrap_ilst, covr)
 

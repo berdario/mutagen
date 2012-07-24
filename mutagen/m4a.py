@@ -44,7 +44,7 @@ warnings.warn(
 # ones this module needs to peek inside.
 _CONTAINERS = [b"moov", b"udta", b"trak", b"mdia", b"meta", b"ilst",
                b"stbl", b"minf", b"stsd"]
-_SKIP_SIZE = { "meta": 4 }
+_SKIP_SIZE = { b"meta": 4 }
 
 __all__ = ['M4A', 'Open', 'delete', 'M4ACover']
 
@@ -100,7 +100,7 @@ class Atom(object):
         """Render raw atom data."""
         # this raises OverflowError if Py_ssize_t can't handle the atom data
         size = len(data) + 8
-        name, data = name.encode(), data.encode()
+        name = name.encode()
         if size <= 0xFFFFFFFF:
             return struct.pack(">I4s", size, name) + data
         else:
@@ -403,13 +403,13 @@ class M4ATags(DictProxy, Metadata):
         self.save(filename)
 
     __atoms = {
-        "----": (__parse_freeform, __render_freeform),
-        "trkn": (__parse_pair, __render_pair),
-        "disk": (__parse_pair, __render_pair_no_trailing),
-        "gnre": (__parse_genre, None),
-        "tmpo": (__parse_tempo, __render_tempo),
-        "cpil": (__parse_compilation, __render_compilation),
-        "covr": (__parse_cover, __render_cover),
+        b"----": (__parse_freeform, __render_freeform),
+        b"trkn": (__parse_pair, __render_pair),
+        b"disk": (__parse_pair, __render_pair_no_trailing),
+        b"gnre": (__parse_genre, None),
+        b"tmpo": (__parse_tempo, __render_tempo),
+        b"cpil": (__parse_compilation, __render_compilation),
+        b"covr": (__parse_cover, __render_cover),
         }
 
     def pprint(self):
@@ -434,13 +434,13 @@ class M4AInfo(object):
     def __init__(self, atoms, fileobj):
         hdlr = atoms["moov.trak.mdia.hdlr"]
         fileobj.seek(hdlr.offset)
-        if "soun" not in fileobj.read(hdlr.length):
+        if b"soun" not in fileobj.read(hdlr.length):
             raise M4AStreamInfoError("track has no audio data")
 
         mdhd = atoms["moov.trak.mdia.mdhd"]
         fileobj.seek(mdhd.offset)
         data = fileobj.read(mdhd.length)
-        if ord(data[8]) == 0:
+        if data[8] == 0:
             offset = 20
             fmt = ">2I"
         else:
