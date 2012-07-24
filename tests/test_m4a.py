@@ -171,50 +171,50 @@ class TM4A(TestCase):
         self.set_key(b'\xa9nam', "Some test name")
 
     def test_freeform(self):
-        self.set_key('----:net.sacredchao.Mutagen:test key', "whee")
+        self.set_key(b'----:net.sacredchao.Mutagen:test key', b"whee")
 
     def test_tracknumber(self):
-        self.set_key('trkn', (1, 10))
+        self.set_key(b'trkn', (1, 10))
 
     def test_disk(self):
-        self.set_key('disk', (18, 0))
+        self.set_key(b'disk', (18, 0))
 
     def test_tracknumber_too_small(self):
-        self.failUnlessRaises(ValueError, self.set_key, 'trkn', (-1, 0))
-        self.failUnlessRaises(ValueError, self.set_key, 'trkn', (2**18, 1))
+        self.failUnlessRaises(ValueError, self.set_key, b'trkn', (-1, 0))
+        self.failUnlessRaises(ValueError, self.set_key, b'trkn', (2**18, 1))
 
     def test_disk_too_small(self):
-        self.failUnlessRaises(ValueError, self.set_key, 'disk', (-1, 0))
-        self.failUnlessRaises(ValueError, self.set_key, 'disk', (2**18, 1))
+        self.failUnlessRaises(ValueError, self.set_key, b'disk', (-1, 0))
+        self.failUnlessRaises(ValueError, self.set_key, b'disk', (2**18, 1))
 
     def test_tracknumber_wrong_size(self):
-        self.failUnlessRaises(ValueError, self.set_key, 'trkn', (1,))
-        self.failUnlessRaises(ValueError, self.set_key, 'trkn', (1, 2, 3,))
+        self.failUnlessRaises(ValueError, self.set_key, b'trkn', (1,))
+        self.failUnlessRaises(ValueError, self.set_key, b'trkn', (1, 2, 3,))
 
     def test_disk_wrong_size(self):
-        self.failUnlessRaises(ValueError, self.set_key, 'disk', (1,))
-        self.failUnlessRaises(ValueError, self.set_key, 'disk', (1, 2, 3,))
+        self.failUnlessRaises(ValueError, self.set_key, b'disk', (1,))
+        self.failUnlessRaises(ValueError, self.set_key, b'disk', (1, 2, 3,))
 
     def test_tempo(self):
-        self.set_key('tmpo', 150)
+        self.set_key(b'tmpo', 150)
 
     def test_tempo_invalid(self):
-        self.failUnlessRaises(ValueError, self.set_key, 'tmpo', 100000)
+        self.failUnlessRaises(ValueError, self.set_key, b'tmpo', 100000)
 
     def test_compilation(self):
-        self.set_key('cpil', True)
+        self.set_key(b'cpil', True)
 
     def test_compilation_false(self):
-        self.set_key('cpil', False)
+        self.set_key(b'cpil', False)
 
     def test_cover(self):
-        self.set_key('covr', 'woooo')
+        self.set_key(b'covr', b'woooo')
 
     def test_cover_png(self):
-        self.set_key('covr', M4ACover('woooo', M4ACover.FORMAT_PNG))
+        self.set_key(b'covr', M4ACover(b'woooo', M4ACover.FORMAT_PNG))
 
     def test_cover_jpeg(self):
-        self.set_key('covr', M4ACover('hoooo', M4ACover.FORMAT_JPEG))
+        self.set_key(b'covr', M4ACover(b'hoooo', M4ACover.FORMAT_JPEG))
 
     def test_pprint(self):
         self.audio.pprint()
@@ -236,7 +236,7 @@ class TM4A(TestCase):
         self.faad()
 
     def test_reads_unknown_text(self):
-        self.set_key("foob", "A test")
+        self.set_key(b"foob", "A test")
 
     def test_mime(self):
         self.failUnless("audio/mp4" in self.audio.mime)
@@ -261,8 +261,8 @@ class TM4AHasTags(TM4A):
         self.failUnless(self.audio.tags)
 
     def test_has_covr(self):
-        self.failUnless('covr' in self.audio.tags)
-        covr = self.audio.tags['covr']
+        self.failUnless(b'covr' in self.audio.tags)
+        covr = self.audio.tags[b'covr']
         self.failUnlessEqual(covr.imageformat, M4ACover.FORMAT_PNG)
 
     def test_not_my_file(self):

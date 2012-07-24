@@ -48,7 +48,7 @@ _SKIP_SIZE = { b"meta": 4 }
 
 __all__ = ['M4A', 'Open', 'delete', 'M4ACover']
 
-class M4ACover(str):
+class M4ACover(bytes):
     """A cover artwork.
     
     Attributes:
@@ -58,7 +58,7 @@ class M4ACover(str):
     FORMAT_PNG = 0x0E
 
     def __new__(cls, data, imageformat=None):
-        self = str.__new__(cls, data)
+        self = bytes.__new__(cls, data)
         if imageformat is None: imageformat = M4ACover.FORMAT_JPEG
         self.imageformat = imageformat
         try: self.format
@@ -100,7 +100,8 @@ class Atom(object):
         """Render raw atom data."""
         # this raises OverflowError if Py_ssize_t can't handle the atom data
         size = len(data) + 8
-        name = name.encode()
+        if isinstance(name, str):
+            name = name.encode()
         if size <= 0xFFFFFFFF:
             return struct.pack(">I4s", size, name) + data
         else:
@@ -211,34 +212,32 @@ class M4ATags(DictProxy, Metadata):
             parse = self.__atoms.get(atom.name, (M4ATags.__parse_text,))[0]
             parse(self, atom, data)
 
-    def __key_sort(item1, item2):
-        (key1, v1) = item1
-        (key2, v2) = item2
+    def __key_sort(item):
+        (key, v) = item
         # iTunes always writes the tags in order of "relevance", try
         # to copy it as closely as possible.
         order = [b"\xa9nam", b"\xa9ART", b"\xa9wrt", b"\xa9alb",
-                 b"\xa9gen", "gnre", "trkn", "disk",
-                 b"\xa9day", "cpil", "tmpo", b"\xa9too",
-                 "----", "covr", b"\xa9lyr"]
-        order = dict(list(zip(order, list(range(len(order))))))
+                 b"\xa9gen", b"gnre", b"trkn", b"disk",
+                 b"\xa9day", b"cpil", b"tmpo", b"\xa9too",
+                 b"----", b"covr", b"\xa9lyr"]
+        order = {k:i for i,k in enumerate(order)}
         last = len(order)
         # If there's no key-based way to distinguish, order by length.
         # If there's still no way, go by string comparison on the
         # values, so we at least have something determinstic.
-        return (cmp(order.get(key1[:4], last), order.get(key2[:4], last)) or
-                cmp(len(v1), len(v2)) or cmp(v1, v2))
+        return (order.get(key[:4], last), len(str(v)), str(v))
     __key_sort = staticmethod(__key_sort)
 
     def save(self, filename):
         """Save the metadata to the given filename."""
         values = []
         items = list(self.items())
-        items.sort(self.__key_sort)
+        items.sort(key=self.__key_sort)
         for key, value in items:
             render = self.__atoms.get(
                 key[:4], (None, M4ATags.__render_text))[1]
             values.append(render(self, key, value))
-        data = Atom.render("ilst", "".join(values))
+        data = Atom.render("ilst", b"".join(values))
 
         # Find the old atoms.
         fileobj = open(filename, "rb+")
@@ -328,12 +327,14 @@ class M4ATags(DictProxy, Metadata):
             # they actually end up in the file.
             pass
         else:
-            self["%s:%s:%s" % (atom.name, mean, name)] = value
+            self[atom.name + b":" + mean + b":" + name] = value
     def __render_freeform(self, key, value):
-        dummy, mean, name = key.split(":", 2)
-        mean = struct.pack(">I4sI", len(mean) + 12, "mean", 0) + mean
-        name = struct.pack(">I4sI", len(name) + 12, "name", 0) + name
-        value = struct.pack(">I4s2I", len(value) + 16, "data", 0x1, 0) + value
+        if isinstance(value, str):
+            value = value.encode()
+        dummy, mean, name = key.split(b":", 2)
+        mean = struct.pack(">I4sI", len(mean) + 12, b"mean", 0) + mean
+        name = struct.pack(">I4sI", len(name) + 12, b"name", 0) + name
+        value = struct.pack(">I4s2I", len(value) + 16, b"data", 0x1, 0) + value
         final = mean + name + value
         return Atom.render("----", mean + name + value)
 
@@ -375,11 +376,11 @@ class M4ATags(DictProxy, Metadata):
         except TypeError: self[atom.name] = False
 
     def __render_compilation(self, key, value):
-        return self.__render_data(key, 0x15, chr(bool(value)))
+        return self.__render_data(key, 0x15, bytes([bool(value)]))
 
     def __parse_cover(self, atom, data):
         length, name, imageformat = struct.unpack(">I4sI", data[:12])
-        if name != "data":
+        if name != b"data":
             raise M4AMetadataError(
                 "unexpected atom %r inside 'covr'" % name)
         if imageformat not in (M4ACover.FORMAT_JPEG, M4ACover.FORMAT_PNG):
@@ -388,6 +389,8 @@ class M4ATags(DictProxy, Metadata):
     def __render_cover(self, key, value):
         try: imageformat = value.imageformat
         except AttributeError: imageformat = M4ACover.FORMAT_JPEG
+        if isinstance(value, str):
+            value = value.encode()
         data = Atom.render("data", struct.pack(">2I", imageformat, 0) + value)
         return Atom.render(key, data)
 
