@@ -40,7 +40,7 @@ _SKIP_SIZE = { b"meta": 4 }
 
 __all__ = ['MP4', 'Open', 'delete', 'MP4Cover']
 
-class MP4Cover(str):
+class MP4Cover(bytes):
     """A cover artwork.
     
     Attributes:
@@ -50,7 +50,7 @@ class MP4Cover(str):
     FORMAT_PNG = 0x0E
 
     def __new__(cls, data, imageformat=None):
-        self = str.__new__(cls, data)
+        self = bytes.__new__(cls, data)
         if imageformat is None: imageformat = MP4Cover.FORMAT_JPEG
         self.imageformat = imageformat
         try: self.format
@@ -265,7 +265,7 @@ class MP4Tags(DictProxy, Metadata):
         # If there's no key-based way to distinguish, order by length.
         # If there's still no way, go by string comparison on the
         # values, so we at least have something determinstic.
-        return (order.get(key[:4], last), len(v), v)
+        return (order.get(key[:4], last), len(str(v)), str(v))
     __key_sort = staticmethod(__key_sort)
 
     def save(self, filename):
@@ -529,7 +529,7 @@ class MP4Tags(DictProxy, Metadata):
             except AttributeError: imageformat = MP4Cover.FORMAT_JPEG
             atom_data.append(
                 Atom.render(b"data", struct.pack(">2I", imageformat, 0) + cover))
-        return Atom.render(key, "".join(atom_data))
+        return Atom.render(key, b"".join(atom_data))
 
     def __parse_text(self, atom, data, expected_flags=1):
         value = [text.decode('utf-8', 'replace') for flags, text
@@ -564,7 +564,8 @@ class MP4Tags(DictProxy, Metadata):
     def pprint(self):
         values = []
         for key, value in self.items():
-            key = key.decode('latin1')
+            if isinstance(key, bytes):
+                key = key.decode('latin1')
             if key == b"covr":
                 values.append("%s=%s" % (key, ", ".join(
                     ["[%d bytes of data]" % len(data) for data in value])))

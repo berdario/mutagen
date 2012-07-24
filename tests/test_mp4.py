@@ -320,85 +320,85 @@ class TMP4(TestCase):
         self.set_key(b'\xa9nam', ["Some test name", "One more name"])
 
     def test_freeform(self):
-        self.set_key('----:net.sacredchao.Mutagen:test key', ["whee"])
+        self.set_key(b'----:net.sacredchao.Mutagen:test key', [b"whee"])
 
     def test_freeform_2(self):
-        self.set_key('----:net.sacredchao.Mutagen:test key', "whee", ["whee"])
+        self.set_key(b'----:net.sacredchao.Mutagen:test key', b"whee", [b"whee"])
 
     def test_freeforms(self):
-        self.set_key('----:net.sacredchao.Mutagen:test key', ["whee", "uhh"])
+        self.set_key(b'----:net.sacredchao.Mutagen:test key', [b"whee", b"uhh"])
 
     def test_tracknumber(self):
-        self.set_key('trkn', [(1, 10)])
-        self.set_key('trkn', [(1, 10), (5, 20)], faad=False)
-        self.set_key('trkn', [])
+        self.set_key(b'trkn', [(1, 10)])
+        self.set_key(b'trkn', [(1, 10), (5, 20)], faad=False)
+        self.set_key(b'trkn', [])
 
     def test_disk(self):
-        self.set_key('disk', [(18, 0)])
-        self.set_key('disk', [(1, 10), (5, 20)], faad=False)
-        self.set_key('disk', [])
+        self.set_key(b'disk', [(18, 0)])
+        self.set_key(b'disk', [(1, 10), (5, 20)], faad=False)
+        self.set_key(b'disk', [])
 
     def test_tracknumber_too_small(self):
-        self.failUnlessRaises(ValueError, self.set_key, 'trkn', [(-1, 0)])
-        self.failUnlessRaises(ValueError, self.set_key, 'trkn', [(2**18, 1)])
+        self.failUnlessRaises(ValueError, self.set_key, b'trkn', [(-1, 0)])
+        self.failUnlessRaises(ValueError, self.set_key, b'trkn', [(2**18, 1)])
 
     def test_disk_too_small(self):
-        self.failUnlessRaises(ValueError, self.set_key, 'disk', [(-1, 0)])
-        self.failUnlessRaises(ValueError, self.set_key, 'disk', [(2**18, 1)])
+        self.failUnlessRaises(ValueError, self.set_key, b'disk', [(-1, 0)])
+        self.failUnlessRaises(ValueError, self.set_key, b'disk', [(2**18, 1)])
 
     def test_tracknumber_wrong_size(self):
-        self.failUnlessRaises(ValueError, self.set_key, 'trkn', (1,))
-        self.failUnlessRaises(ValueError, self.set_key, 'trkn', (1, 2, 3,))
-        self.failUnlessRaises(ValueError, self.set_key, 'trkn', [(1,)])
-        self.failUnlessRaises(ValueError, self.set_key, 'trkn', [(1, 2, 3,)])
+        self.failUnlessRaises(ValueError, self.set_key, b'trkn', (1,))
+        self.failUnlessRaises(ValueError, self.set_key, b'trkn', (1, 2, 3,))
+        self.failUnlessRaises(ValueError, self.set_key, b'trkn', [(1,)])
+        self.failUnlessRaises(ValueError, self.set_key, b'trkn', [(1, 2, 3,)])
 
     def test_disk_wrong_size(self):
-        self.failUnlessRaises(ValueError, self.set_key, 'disk', [(1,)])
-        self.failUnlessRaises(ValueError, self.set_key, 'disk', [(1, 2, 3,)])
+        self.failUnlessRaises(ValueError, self.set_key, b'disk', [(1,)])
+        self.failUnlessRaises(ValueError, self.set_key, b'disk', [(1, 2, 3,)])
 
     def test_tempo(self):
-        self.set_key('tmpo', [150])
-        self.set_key('tmpo', [])
+        self.set_key(b'tmpo', [150])
+        self.set_key(b'tmpo', [])
 
     def test_tempos(self):
-        self.set_key('tmpo', [160, 200], faad=False)
+        self.set_key(b'tmpo', [160, 200], faad=False)
 
     def test_tempo_invalid(self):
         for badvalue in [[10000000], [-1], 10, "foo"]:
-            self.failUnlessRaises(ValueError, self.set_key, 'tmpo', badvalue)
+            self.failUnlessRaises(ValueError, self.set_key, b'tmpo', badvalue)
 
     def test_compilation(self):
-        self.set_key('cpil', True)
+        self.set_key(b'cpil', True)
 
     def test_compilation_false(self):
-        self.set_key('cpil', False)
+        self.set_key(b'cpil', False)
 
     def test_gapless(self):
-        self.set_key('pgap', True)
+        self.set_key(b'pgap', True)
 
     def test_gapless_false(self):
-        self.set_key('pgap', False)
+        self.set_key(b'pgap', False)
 
     def test_podcast(self):
-        self.set_key('pcst', True)
+        self.set_key(b'pcst', True)
 
     def test_podcast_false(self):
-        self.set_key('pcst', False)
+        self.set_key(b'pcst', False)
 
     def test_cover(self):
-        self.set_key('covr', ['woooo'])
+        self.set_key(b'covr', [b'woooo'])
 
     def test_cover_png(self):
-        self.set_key('covr', [
-            MP4Cover('woooo', MP4Cover.FORMAT_PNG),
-            MP4Cover('hoooo', MP4Cover.FORMAT_JPEG),
+        self.set_key(b'covr', [
+            MP4Cover(b'woooo', MP4Cover.FORMAT_PNG),
+            MP4Cover(b'hoooo', MP4Cover.FORMAT_JPEG),
         ])
 
     def test_podcast_url(self):
-        self.set_key('purl', ['http://pdl.warnerbros.com/wbie/justiceleagueheroes/audio/JLH_EA.xml'])
+        self.set_key(b'purl', ['http://pdl.warnerbros.com/wbie/justiceleagueheroes/audio/JLH_EA.xml'])
 
     def test_episode_guid(self):
-        self.set_key('catg', ['falling-star-episode-1'])
+        self.set_key(b'catg', ['falling-star-episode-1'])
 
     def test_pprint(self):
         self.failUnless(self.audio.pprint())
@@ -424,7 +424,7 @@ class TMP4(TestCase):
         self.faad()
 
     def test_reads_unknown_text(self):
-        self.set_key("foob", ["A test"])
+        self.set_key(b"foob", ["A test"])
 
     def __read_offsets(self, filename):
         fileobj = open(filename, 'rb')
@@ -491,8 +491,8 @@ class TMP4HasTags(TMP4):
         self.failUnless(self.audio.tags)
 
     def test_has_covr(self):
-        self.failUnless('covr' in self.audio.tags)
-        covr = self.audio.tags['covr']
+        self.failUnless(b'covr' in self.audio.tags)
+        covr = self.audio.tags[b'covr']
         self.failUnlessEqual(len(covr), 2)
         self.failUnlessEqual(covr[0].imageformat, MP4Cover.FORMAT_PNG)
         self.failUnlessEqual(covr[1].imageformat, MP4Cover.FORMAT_JPEG)
@@ -508,8 +508,8 @@ class TMP4CovrWithName(TMP4):
     original = os.path.join("tests", "data", "covr-with-name.m4a")
 
     def test_has_covr(self):
-        self.failUnless('covr' in self.audio.tags)
-        covr = self.audio.tags['covr']
+        self.failUnless(b'covr' in self.audio.tags)
+        covr = self.audio.tags[b'covr']
         self.failUnlessEqual(len(covr), 2)
         self.failUnlessEqual(covr[0].imageformat, MP4Cover.FORMAT_PNG)
         self.failUnlessEqual(covr[1].imageformat, MP4Cover.FORMAT_JPEG)
