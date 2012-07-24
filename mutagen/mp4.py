@@ -92,6 +92,8 @@ class Atom(object):
         """Render raw atom data."""
         # this raises OverflowError if Py_ssize_t can't handle the atom data
         size = len(data) + 8
+        if isinstance(name, str):
+            name = name.encode()
         if size <= 0xFFFFFFFF:
             return struct.pack(">I4s", size, name) + data
         else:
@@ -118,7 +120,7 @@ class Atom(object):
         elif self.children is None:
             raise KeyError("%r is not a container" % self.name)
         for child in self.children:
-            if child.name == remaining[0]:
+            if child.name == remaining[0].encode():
                 return child[remaining[1:]]
         else:
             raise KeyError("%r not found" % remaining[0])
@@ -168,10 +170,10 @@ class Atoms(object):
         'names' may be a list of atoms ([b'moov', b'udta']) or a string
         specifying the complete path ('moov.udta').
         """
-        if isinstance(names, bytes):
-            names = names.split(b".")
+        if isinstance(names, str):
+            names = names.split(".")
         for child in self.atoms:
-            if child.name == names[0]:
+            if child.name == names[0].encode():
                 return child[names[1:]]
         else:
             raise KeyError("%s not found" % names[0])
@@ -241,7 +243,7 @@ class MP4Tags(DictProxy, Metadata):
     """
 
     def load(self, atoms, fileobj):
-        try: ilst = atoms[b"moov.udta.meta.ilst"]
+        try: ilst = atoms["moov.udta.meta.ilst"]
         except KeyError as key:
             raise MP4MetadataError(key)
         for atom in ilst.children:
@@ -277,14 +279,14 @@ class MP4Tags(DictProxy, Metadata):
                 values.append(info[1](self, key, value, *info[2:]))
             except (TypeError, ValueError) as s:
                 raise MP4MetadataValueError(s).with_traceback(sys.exc_info()[2])
-        data = Atom.render(b"ilst", b"".join(values))
+        data = Atom.render("ilst", b"".join(values))
 
         # Find the old atoms.
         fileobj = open(filename, "rb+")
         try:
             atoms = Atoms(fileobj)
             try:
-                path = atoms.path(b"moov", b"udta", b"meta", b"ilst")
+                path = atoms.path("moov", "udta", "meta", "ilst")
             except KeyError:
                 self.__save_new(fileobj, atoms, data)
             else:
@@ -302,11 +304,11 @@ class MP4Tags(DictProxy, Metadata):
         meta = Atom.render(
             b"meta", b"\x00\x00\x00\x00" + hdlr + ilst + self.__pad_ilst(ilst))
         try:
-            path = atoms.path(b"moov", b"udta")
+            path = atoms.path("moov", "udta")
         except KeyError:
             # moov.udta not found -- create one
-            path = atoms.path(b"moov")
-            meta = Atom.render(b"udta", meta)
+            path = atoms.path("moov")
+            meta = Atom.render("udta", meta)
         offset = path[-1].offset + 8
         insert_bytes(fileobj, len(meta), offset)
         fileobj.seek(offset)
@@ -437,10 +439,12 @@ class MP4Tags(DictProxy, Metadata):
         if value:
             self[atom.name + b":" + mean + b":" + name] = value
     def __render_freeform(self, key, value):
+        if isinstance(key, str):
+            key = key.encode()
         dummy, mean, name = key.split(b":", 2)
         mean = struct.pack(">I4sI", len(mean) + 12, b"mean", 0) + mean
         name = struct.pack(">I4sI", len(name) + 12, b"name", 0) + name
-        if isinstance(value, str):
+        if isinstance(value, bytes):
             value = [value]
         return Atom.render(b"----", mean + name + b"".join([
             struct.pack(">I4s2I", len(data) + 16, b"data", 1, 0) + data
@@ -499,7 +503,7 @@ class MP4Tags(DictProxy, Metadata):
         try: self[atom.name] = bool(ord(data[16:17]))
         except TypeError: self[atom.name] = False
     def __render_bool(self, key, value):
-        return self.__render_data(key, 0x15, [chr(bool(value))])
+        return self.__render_data(key, 0x15, [bytes([bool(value)])])
 
     def __parse_cover(self, atom, data):
         self[atom.name] = []
@@ -587,8 +591,8 @@ class MP4Info(object):
     bits_per_sample = 0
 
     def __init__(self, atoms, fileobj):
-        for trak in list(atoms[b"moov"].findall(b"trak")):
-            hdlr = trak[b"mdia", b"hdlr"]
+        for trak in list(atoms["moov"].findall(b"trak")):
+            hdlr = trak["mdia", "hdlr"]
             fileobj.seek(hdlr.offset)
             data = fileobj.read(hdlr.length)
             if data[16:20] == b"soun":
@@ -596,7 +600,7 @@ class MP4Info(object):
         else:
             raise MP4StreamInfoError("track has no audio data")
 
-        mdhd = trak[b"mdia", b"mdhd"]
+        mdhd = trak["mdia", "mdhd"]
         fileobj.seek(mdhd.offset)
         data = fileobj.read(mdhd.length)
         if data[8] == 0:
@@ -610,7 +614,7 @@ class MP4Info(object):
         self.length = float(length) / unit
 
         try:
-            atom = trak[b"mdia", b"minf", b"stbl", b"stsd"]
+            atom = trak["mdia", "minf", "stbl", "stsd"]
             fileobj.seek(atom.offset)
             data = fileobj.read(atom.length)
             if data[20:24] == b"mp4a":

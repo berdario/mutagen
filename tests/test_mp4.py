@@ -25,10 +25,10 @@ class TAtom(TestCase):
         self.failUnlessEqual(Atom(fileobj).length, 8)
 
     def test_render_too_big(self):
-        class TooBig(str):
+        class TooBig(bytes):
             def __len__(self):
                 return 1 << 32
-        data = TooBig("test")
+        data = TooBig(b"test")
         try: len(data)
         except OverflowError:
             # Py_ssize_t is still only 32 bits on this system.
@@ -56,7 +56,7 @@ class TAtoms(TestCase):
         self.failUnlessRaises(KeyError, self.atoms.__getitem__, "whee")
 
     def test_name(self):
-        self.failUnlessEqual(self.atoms.atoms[0].name, "ftyp")
+        self.failUnlessEqual(self.atoms.atoms[0].name, b"ftyp")
 
     def test_children(self):
         self.failUnless(self.atoms.atoms[2].children)
@@ -65,7 +65,7 @@ class TAtoms(TestCase):
         self.failUnless(self.atoms.atoms[0].children is None)
 
     def test_extra_trailing_data(self):
-        data = BytesIO(Atom.render("data", "whee") + b"\x00\x00")
+        data = BytesIO(Atom.render("data", b"whee") + b"\x00\x00")
         self.failUnless(Atoms(data))
 
     def test_repr(self):
@@ -83,7 +83,7 @@ class TMP4Info(TestCase):
         mdhd = Atom.render("mdhd", (b"\x01\x00\x00\x00" + b"\x00" * 16 +
                                     b"\x00\x00\x00\x02" + # 2 Hz
                                     b"\x00\x00\x00\x00\x00\x00\x00\x10"))
-        hdlr = Atom.render("hdlr", b"\x00" * 8 + soun)
+        hdlr = Atom.render("hdlr", b"\x00" * 8 + soun.encode())
         mdia = Atom.render("mdia", mdhd + hdlr)
         trak = Atom.render("trak", mdia)
         moov = Atom.render("moov", trak)
@@ -93,13 +93,13 @@ class TMP4Info(TestCase):
         self.failUnlessEqual(info.length, 8)
 
     def test_multiple_tracks(self):
-        hdlr = Atom.render("hdlr", b"\x00" * 8 + "whee")
+        hdlr = Atom.render("hdlr", b"\x00" * 8 + b"whee")
         mdia = Atom.render("mdia", hdlr)
         trak1 = Atom.render("trak", mdia)
         mdhd = Atom.render("mdhd", (b"\x01\x00\x00\x00" + b"\x00" * 16 +
                                     b"\x00\x00\x00\x02" + # 2 Hz
                                     b"\x00\x00\x00\x00\x00\x00\x00\x10"))
-        hdlr = Atom.render("hdlr", b"\x00" * 8 + "soun")
+        hdlr = Atom.render("hdlr", b"\x00" * 8 + b"soun")
         mdia = Atom.render("mdia", mdhd + hdlr)
         trak2 = Atom.render("trak", mdia)
         moov = Atom.render("moov", trak1 + trak2)
@@ -129,8 +129,8 @@ class TMP4Tags(TestCase):
     def test_empty_cpil(self):
         cpil = Atom.render("cpil", Atom.render("data", b"\x00" * 8))
         tags = self.wrap_ilst(cpil)
-        self.failUnless("cpil" in tags)
-        self.failIf(tags["cpil"])
+        self.failUnless(b"cpil" in tags)
+        self.failIf(tags[b"cpil"])
 
     def test_genre_too_big(self):
         data = Atom.render("data", b"\x00" * 8 + b"\x01\x00")
@@ -140,21 +140,21 @@ class TMP4Tags(TestCase):
         self.failIf(b"\xa9gen" in tags)
 
     def test_strips_unknown_types(self):
-        data = Atom.render("data", b"\x00" * 8 + "whee")
+        data = Atom.render("data", b"\x00" * 8 + b"whee")
         foob = Atom.render("foob", data)
         tags = self.wrap_ilst(foob)
         self.failIf(tags)
 
     def test_bad_covr(self):
-        data = Atom.render("foob", b"\x00\x00\x00\x0E" + b"\x00" * 4 + "whee")
+        data = Atom.render("foob", b"\x00\x00\x00\x0E" + b"\x00" * 4 + b"whee")
         covr = Atom.render("covr", data)
         self.failUnlessRaises(MP4MetadataError, self.wrap_ilst, covr)
 
     def test_covr_blank_format(self):
-        data = Atom.render("data", b"\x00\x00\x00\x00" + b"\x00" * 4 + "whee")
+        data = Atom.render("data", b"\x00\x00\x00\x00" + b"\x00" * 4 + b"whee")
         covr = Atom.render("covr", data)
         tags = self.wrap_ilst(covr)
-        self.failUnlessEqual(MP4Cover.FORMAT_JPEG, tags["covr"][0].imageformat)
+        self.failUnlessEqual(MP4Cover.FORMAT_JPEG, tags[b"covr"][0].imageformat)
 
     def test_render_bool(self):
         self.failUnlessEqual(MP4Tags()._MP4Tags__render_bool('pgap', True),
@@ -181,11 +181,11 @@ class TMP4Tags(TestCase):
         
     def test_render_data(self):
         self.failUnlessEqual(
-             MP4Tags()._MP4Tags__render_data('aART', 1, ['whee']),
+             MP4Tags()._MP4Tags__render_data('aART', 1, [b'whee']),
              b"\x00\x00\x00\x1caART"
              b"\x00\x00\x00\x14data\x00\x00\x00\x01\x00\x00\x00\x00whee")
         self.failUnlessEqual(
-             MP4Tags()._MP4Tags__render_data('aART', 2, ['whee', 'wee']),
+             MP4Tags()._MP4Tags__render_data('aART', 2, [b'whee', b'wee']),
              b"\x00\x00\x00/aART"
              b"\x00\x00\x00\x14data\x00\x00\x00\x02\x00\x00\x00\x00whee"
              b"\x00\x00\x00\x13data\x00\x00\x00\x02\x00\x00\x00\x00wee")
@@ -198,7 +198,7 @@ class TMP4Tags(TestCase):
     def test_render_freeform(self):
         self.failUnlessEqual(
              MP4Tags()._MP4Tags__render_freeform(
-             '----:net.sacredchao.Mutagen:test', ['whee', 'wee']),
+             '----:net.sacredchao.Mutagen:test', [b'whee', b'wee']),
              b"\x00\x00\x00a----"
              b"\x00\x00\x00\"mean\x00\x00\x00\x00net.sacredchao.Mutagen"
              b"\x00\x00\x00\x10name\x00\x00\x00\x00test"
@@ -206,15 +206,15 @@ class TMP4Tags(TestCase):
              b"\x00\x00\x00\x13data\x00\x00\x00\x01\x00\x00\x00\x00wee")
 
     def test_bad_freeform(self):
-        mean = Atom.render("mean", "net.sacredchao.Mutagen")
-        name = Atom.render("name", "empty test key")
+        mean = Atom.render("mean", b"net.sacredchao.Mutagen")
+        name = Atom.render("name", b"empty test key")
         bad_freeform = Atom.render("----", b"\x00" * 4 + mean + name)
         self.failUnlessRaises(MP4MetadataError, self.wrap_ilst, bad_freeform)
 
     def test_pprint_non_text_list(self):
         tags = MP4Tags()
-        tags["tmpo"] = [120, 121]
-        tags["trck"] = [(1, 2), (3, 4)]
+        tags[b"tmpo"] = [120, 121]
+        tags[b"trck"] = [(1, 2), (3, 4)]
         tags.pprint()
 
 add(TMP4Tags)

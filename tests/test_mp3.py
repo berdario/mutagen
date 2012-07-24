@@ -140,7 +140,7 @@ class TMPEGInfo(TestCase):
         MPEGInfo(fileobj)
 
     def test_empty(self):
-        fileobj = BytesIO("")
+        fileobj = BytesIO(b"")
         self.failUnlessRaises(IOError, MPEGInfo, fileobj)
 add(TMPEGInfo)
 
