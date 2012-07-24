@@ -675,7 +675,7 @@ class MP4(FileType):
         self.tags = self.MP4Tags()
 
     def score(filename, fileobj, header):
-        return (b"ftyp" in header) + ("mp4" in header)
+        return (b"ftyp" in header) + (b"mp4" in header)
     score = staticmethod(score)
 
 Open = MP4

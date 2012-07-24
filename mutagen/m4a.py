@@ -278,7 +278,7 @@ class M4ATags(DictProxy, Metadata):
         return old_end - moov.offset
 
     def __save_new(self, fileobj, atoms, ilst, offset):
-        hdlr = Atom.render("hdlr", b"\x00" * 8 + "mdirappl" + b"\x00" * 9)
+        hdlr = Atom.render("hdlr", b"\x00" * 8 + b"mdirappl" + b"\x00" * 9)
         meta = Atom.render("meta", b"\x00\x00\x00\x00" + hdlr + ilst)
         moov, udta = atoms.path("moov", "udta")
         insert_bytes(fileobj, len(meta), udta.offset + offset + 8)

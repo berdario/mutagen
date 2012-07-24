@@ -74,7 +74,7 @@ class MonkeysAudio(APEv2File):
     _mimes = ["audio/ape", "audio/x-ape"]
 
     def score(filename, fileobj, header):
-        return header.startswith("MAC ") + filename.lower().endswith(".ape")
+        return header.startswith(b"MAC ") + filename.lower().endswith(".ape")
     score = staticmethod(score)
 
 Open = MonkeysAudio

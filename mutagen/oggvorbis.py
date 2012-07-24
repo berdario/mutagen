@@ -118,7 +118,7 @@ class OggVorbis(OggFileType):
     _mimes = ["audio/vorbis", "audio/x-vorbis"]
 
     def score(filename, fileobj, header):
-        return (header.startswith("OggS") * (b"\x01vorbis" in header))
+        return (header.startswith(b"OggS") * (b"\x01vorbis" in header))
     score = staticmethod(score)
 
 Open = OggVorbis
