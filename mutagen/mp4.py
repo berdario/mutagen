@@ -300,7 +300,7 @@ class MP4Tags(DictProxy, Metadata):
         return Atom.render(b"free", b"\x00" * length)
 
     def __save_new(self, fileobj, atoms, ilst):
-        hdlr = Atom.render(b"hdlr", b"\x00" * 8 + "mdirapplb" + b"\x00" * 9)
+        hdlr = Atom.render(b"hdlr", b"\x00" * 8 + b"mdirapplb" + b"\x00" * 9)
         meta = Atom.render(
             b"meta", b"\x00\x00\x00\x00" + hdlr + ilst + self.__pad_ilst(ilst))
         try:
@@ -396,13 +396,13 @@ class MP4Tags(DictProxy, Metadata):
         """Update offset tables in all b'stco' and b'co64' atoms."""
         if delta == 0:
             return
-        moov = atoms[b"moov"]
+        moov = atoms["moov"]
         for atom in moov.findall(b'stco', True):
             self.__update_offset_table(fileobj, ">%dI", atom, delta, offset)
         for atom in moov.findall(b'co64', True):
             self.__update_offset_table(fileobj, ">%dQ", atom, delta, offset)
         try:
-            for atom in atoms[b"moof"].findall(b'tfhd', True):
+            for atom in atoms["moof"].findall(b'tfhd', True):
                 self.__update_tfhd(fileobj, atom, delta, offset)
         except KeyError:
             pass
@@ -560,6 +560,7 @@ class MP4Tags(DictProxy, Metadata):
         b"purl": (__parse_text, __render_text, 0),
         b"egid": (__parse_text, __render_text, 0),
         }
+    __atoms.update({k.decode():v for k,v in __atoms.items()})
 
     def pprint(self):
         values = []
