@@ -28,12 +28,12 @@ def main(argv):
 
     enc = locale.getpreferredencoding()
     for filename in args:
-        print "--", filename
-        try: print "- " + File(filename).pprint().encode(enc, 'replace')
-        except AttributeError: print "- Unknown file type"
+        print("--", filename)
+        try: print("- " + File(filename).pprint().encode(enc, 'replace').decode())
+        except AttributeError: print("- Unknown file type")
         except KeyboardInterrupt: raise
-        except Exception, err: print str(err)
-        print
+        except Exception as err: print(str(err))
+        print()
 
 if __name__ == "__main__":
     try: import mutagen

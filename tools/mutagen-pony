@@ -49,14 +49,12 @@ class Report(object):
         strings.append("%d files without tags." % self.missings)
 
         strings.append("\nID3 Versions:")
-        items = self.versions.items(); items.sort()
-        for v,i in items:
+        for v, i in sorted(self.versions.items()):
             strings.append("  %s\t%d" % (".".join(map(str, v)), i))
 
         if self.exceptions:
             strings.append("\nExceptions:")
-            items = self.exceptions.items(); items.sort()
-            for Ex, i in items:
+            for Ex, i in sorted(self.exceptions.items()):
                 strings.append("  %-20s\t%d" % (Ex.__name__, i))
 
         if self.errors:
@@ -75,7 +73,7 @@ def check_dir(path):
     from mutagen.mp3 import MP3
     ID3.PEDANTIC = False
     rep = Report(path)
-    print "Scanning", path
+    print("Scanning", path)
     for path, dirs, files in os.walk(path):
         files.sort()
         for fn in files:
@@ -85,7 +83,7 @@ def check_dir(path):
                 mp3 = MP3(ffn)
             except KeyboardInterrupt:
                 raise
-            except Exception, err:
+            except Exception as err:
                 rep.error(ffn)
             else:
                 if mp3.tags is None:
@@ -93,13 +91,13 @@ def check_dir(path):
                 else:
                     rep.success(mp3.tags)
 
-    print str(rep)
+    print(str(rep))
 
 if __name__ == "__main__":
     try: from mutagen.id3 import ID3
     except ImportError:
         sys.path.append(os.path.abspath("../"))
         from mutagen.id3 import ID3
-    if len(sys.argv) == 1: print "Usage: %s directory ..." % sys.argv[0]
+    if len(sys.argv) == 1: print("Usage: %s directory ..." % sys.argv[0])
     else:
         for path in sys.argv[1:]: check_dir(path)

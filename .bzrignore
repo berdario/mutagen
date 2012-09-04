@@ -38,3 +38,8 @@ tests/test_optimfrog.py.bak
 mutagen/__pycache__
 tests/__pycache__
 tests/data/silence-44-s.flac.new
+tools/mid3iconv.bak
+tools/mid3v2.bak
+tools/moggsplit.bak
+tools/mutagen-inspect.bak
+tools/mutagen-pony.bak
