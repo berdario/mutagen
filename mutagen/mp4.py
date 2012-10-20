@@ -25,7 +25,7 @@ import sys
 
 from mutagen import FileType, Metadata
 from mutagen._constants import GENRES
-from mutagen._util import cdata, insert_bytes, delete_bytes, DictProxy, utf8
+from mutagen._util import cdata, insert_bytes, DictProxy, utf8
 
 class error(IOError): pass
 class MP4MetadataError(error): pass
@@ -519,8 +519,7 @@ class MP4Tags(DictProxy, Metadata):
             if imageformat not in (MP4Cover.FORMAT_JPEG, MP4Cover.FORMAT_PNG):
                 imageformat = MP4Cover.FORMAT_JPEG
             cover = MP4Cover(data[pos+16:pos+length], imageformat)
-            self[atom.name].append(
-                MP4Cover(data[pos+16:pos+length], imageformat))
+            self[atom.name].append(cover)
             pos += length
     def __render_cover(self, key, value):
         atom_data = []

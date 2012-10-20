@@ -256,7 +256,7 @@ class TMP4(TestCase):
         self.audio[b"\xa9nam"] = "wheeee" * 10
         self.audio.save()
         size1 = os.path.getsize(self.audio.filename)
-        audio = MP4(self.audio.filename)
+        MP4(self.audio.filename)
         self.audio[b"\xa9nam"] = "wheeee" * 11
         self.audio.save()
         size2 = os.path.getsize(self.audio.filename)
@@ -482,9 +482,10 @@ class TMP4HasTags(TMP4):
         self.faad()
 
     def test_shrink(self):
-        list(map(self.audio.__delitem__, list(self.audio.keys())))
+        for key in self.audio.keys():
+            del self.audio[key]
         self.audio.save()
-        audio = MP4(self.audio.filename)
+        self.audio = MP4(self.audio.filename)
         self.failIf(self.audio.tags)
 
     def test_has_tags(self):

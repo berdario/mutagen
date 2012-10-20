@@ -20,7 +20,7 @@ Only versions 4.5 and higher are supported.
 For more information, see http://www.losslessaudio.org/
 """
 
-__all__ = ["OptimFROG", "Open", "delete"]
+__all__ = ["OptimFROG", "delete"]
 
 import struct
 from mutagen.apev2 import APEv2File, error, delete

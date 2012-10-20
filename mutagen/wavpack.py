@@ -14,7 +14,7 @@ WavPack is a lossless format that uses APEv2 tags. Read
 http://www.wavpack.com/ for more information.
 """
 
-__all__ = ["WavPack", "Open", "delete"]
+__all__ = ["WavPack", "delete"]
 
 from mutagen.apev2 import APEv2File, error, delete
 from mutagen._util import cdata

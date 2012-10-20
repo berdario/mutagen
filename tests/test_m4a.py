@@ -252,9 +252,10 @@ class TM4AHasTags(TM4A):
         self.faad()
 
     def test_shrink(self):
-        list(map(self.audio.__delitem__, list(self.audio.keys())))
+        for key in self.audio.keys():
+            del self.audio[key]
         self.audio.save()
-        audio = M4A(self.audio.filename)
+        self.audio = M4A(self.audio.filename)
         self.failIf(self.audio.tags)
 
     def test_has_tags(self):

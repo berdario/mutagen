@@ -58,7 +58,7 @@ class OggFLACStreamInfo(StreamInfo):
 
         # Skip over the block header.
         stringobj = BytesIO(page.packets[0][17:])
-        super(OggFLACStreamInfo, self).load(BytesIO(page.packets[0][17:]))
+        super(OggFLACStreamInfo, self).load(stringobj)
 
     def pprint(self):
         return "Ogg " + super(OggFLACStreamInfo, self).pprint()

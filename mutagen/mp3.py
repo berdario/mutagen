@@ -94,8 +94,9 @@ class MPEGInfo(object):
         # at the given offset, 30% through the file, 60% through the file,
         # and 90% through the file.
         for i in [offset, 0.3 * size, 0.6 * size, 0.9 * size]:
-            try: self.__try(fileobj, int(i), size - offset)
-            except error as e: pass
+            try:
+                self.__try(fileobj, int(i), size - offset)
+            except error: pass
             else: break
         # If we can't find any two consecutive frames, try to find just
         # one frame back at the original offset given.
@@ -132,6 +133,8 @@ class MPEGInfo(object):
                 copyright = (frame_data >> 3) & 0x1
                 original = (frame_data >> 2) & 0x1
                 emphasis = (frame_data >> 0) & 0x3
+                # remove unused variables
+                del private, mode_extension, copyright, original, emphasis
                 if (version == 1 or layer == 0 or sample_rate == 0x3 or
                     bitrate == 0 or bitrate == 0xF):
                     frame_1 = data.find(b"\xff", frame_1 + 2)

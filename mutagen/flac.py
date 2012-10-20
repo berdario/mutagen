@@ -21,7 +21,6 @@ http://flac.sourceforge.net/format.html
 
 __all__ = ["FLAC", "Open", "delete"]
 
-import sys
 import struct
 from io import BytesIO
 from functools import reduce

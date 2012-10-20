@@ -37,7 +37,7 @@ class TrueAudioInfo(object):
             raise TrueAudioHeaderError("TTA header not found")
         self.sample_rate = cdata.int_le(header[10:14])
         samples = cdata.uint_le(header[14:18])
-        self.length = float(samples) / self.sample_rate
+        self.length = samples / self.sample_rate
 
     def pprint(self):
         return "True Audio, %.2f seconds, %d Hz." % (

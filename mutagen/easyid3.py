@@ -13,8 +13,6 @@ EasyID3 is a wrapper around mutagen.id3.ID3 to make ID3 tags appear
 more like Vorbis or APEv2 tags.
 """
 
-from fnmatch import fnmatchcase
-
 import mutagen.id3
 
 from mutagen import Metadata

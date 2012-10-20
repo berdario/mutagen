@@ -33,7 +33,6 @@ class TAPEWriter(TestCase):
     offset = 0
 
     def setUp(self):
-        import shutil
         shutil.copy(SAMPLE, SAMPLE + ".new")
         shutil.copy(BROKEN, BROKEN + ".new")
         tag = mutagen.apev2.APEv2()

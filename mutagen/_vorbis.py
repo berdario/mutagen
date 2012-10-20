@@ -21,10 +21,6 @@ from io import BytesIO
 import mutagen
 from mutagen._util import DictMixin, cdata
 
-try: set
-except NameError:
-    from sets import Set as set
-
 def is_valid_key(key):
     """Return true if a string is a valid Vorbis comment key.
 
