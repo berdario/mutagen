@@ -19,10 +19,9 @@ on the specification at http://www.xiph.org/vorbis/doc/Vorbis_I_spec.html.
 
 __all__ = ["OggVorbis", "Open", "delete"]
 
-import struct
-
 from mutagen._vorbis import VCommentDict
 from mutagen.ogg import OggPage, OggFileType, error as OggError
+from mutagen._util import struct_unpack
 
 class error(OggError): pass
 class OggVorbisHeaderError(error): pass
@@ -45,7 +44,7 @@ class OggVorbisInfo(object):
             raise OggVorbisHeaderError(
                 "page has ID header, but doesn't start a stream")
         (self.channels, self.sample_rate, max_bitrate, nominal_bitrate,
-         min_bitrate) = struct.unpack("<B4i", page.packets[0][11:28])
+         min_bitrate) = struct_unpack("<B4i", page.packets[0][11:28])
         self.serial = page.serial
 
         max_bitrate = max(0, max_bitrate)

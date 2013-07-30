@@ -18,10 +18,8 @@ For more information, see http://www.monkeysaudio.com/.
 
 __all__ = ["MonkeysAudio", "Open", "delete"]
 
-import struct
-
 from mutagen.apev2 import APEv2File, error, delete
-from mutagen._util import cdata
+from mutagen._util import cdata, struct_unpack
 
 class MonkeysAudioHeaderError(error): pass
 
@@ -44,12 +42,12 @@ class MonkeysAudioInfo(object):
         if self.version >= 3980:
             (blocks_per_frame, final_frame_blocks, total_frames,
              self.bits_per_sample, self.channels,
-             self.sample_rate) = struct.unpack("<IIIHHI", header[56:76])
+             self.sample_rate) = struct_unpack("<IIIHHI", header[56:76])
         else:
             compression_level = cdata.ushort_le(header[6:8])
-            self.channels, self.sample_rate = struct.unpack(
+            self.channels, self.sample_rate = struct_unpack(
                 "<HI", header[10:16])
-            total_frames, final_frame_blocks = struct.unpack(
+            total_frames, final_frame_blocks = struct_unpack(
                 "<II", header[24:32])
             if self.version >= 3950:
                 blocks_per_frame = 73728 * 4

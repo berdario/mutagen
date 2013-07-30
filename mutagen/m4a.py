@@ -22,14 +22,14 @@ This module does not support 64 bit atom sizes, and so will not
 work on metadata over 4GB.
 """
 
-import struct
 import sys
 
 from io import BytesIO
+from struct import error as struct_error
 
 from mutagen import FileType, Metadata
 from mutagen._constants import GENRES
-from mutagen._util import cdata, insert_bytes, delete_bytes, DictProxy
+from mutagen._util import cdata, insert_bytes, delete_bytes, DictProxy, struct_pack, struct_unpack, struct_calcsize, native_str
 
 class error(IOError): pass
 class M4AMetadataError(error): pass
@@ -82,7 +82,7 @@ class Atom(object):
 
     def __init__(self, fileobj):
         self.offset = fileobj.tell()
-        self.length, self.name = struct.unpack(">I4s", fileobj.read(8))
+        self.length, self.name = struct_unpack(">I4s", fileobj.read(8))
         if self.length == 1:
             raise error("64 bit atom sizes are not supported")
         elif self.length < 8:
@@ -103,9 +103,9 @@ class Atom(object):
         if isinstance(name, str):
             name = name.encode()
         if size <= 0xFFFFFFFF:
-            return struct.pack(">I4s", size, name) + data
+            return struct_pack(">I4s", size, name) + data
         else:
-            return struct.pack(">I4sQ", 1, name, size + 8) + data
+            return struct_pack(">I4sQ", 1, name, size + 8) + data
     render = staticmethod(render)
 
     def __getitem__(self, remaining):
@@ -225,7 +225,7 @@ class M4ATags(DictProxy, Metadata):
         # If there's no key-based way to distinguish, order by length.
         # If there's still no way, go by string comparison on the
         # values, so we at least have something determinstic.
-        return (order.get(key[:4], last), len(str(v)), str(v))
+        return (order.get(key[:4], last), len(native_str(v)), native_str(v))
     __key_sort = staticmethod(__key_sort)
 
     def save(self, filename):
@@ -237,7 +237,7 @@ class M4ATags(DictProxy, Metadata):
             render = self.__atoms.get(
                 key[:4], (None, M4ATags.__render_text))[1]
             values.append(render(self, key, value))
-        data = Atom.render("ilst", b"".join(values))
+        data = Atom.render("ilst", bytearray().join(values))
 
         # Find the old atoms.
         fileobj = open(filename, "rb+")
@@ -308,7 +308,7 @@ class M4ATags(DictProxy, Metadata):
             fileobj.write(cdata.to_uint_be(size))
 
     def __render_data(self, key, flags, data):
-        data = struct.pack(">2I", flags, 0) + data
+        data = struct_pack(">2I", flags, 0) + data
         return Atom.render(key, Atom.render("data", data))
 
     def __parse_freeform(self, atom, data):
@@ -322,7 +322,7 @@ class M4ATags(DictProxy, Metadata):
             value_length = cdata.uint_be(fileobj.read(4))
             # Name, flags, and reserved bytes
             value = fileobj.read(value_length - 4)[12:]
-        except struct.error:
+        except struct_error:
             # Some ---- atoms have no data atom, I have no clue why
             # they actually end up in the file.
             pass
@@ -332,17 +332,17 @@ class M4ATags(DictProxy, Metadata):
         if isinstance(value, str):
             value = value.encode()
         dummy, mean, name = key.split(b":", 2)
-        mean = struct.pack(">I4sI", len(mean) + 12, b"mean", 0) + mean
-        name = struct.pack(">I4sI", len(name) + 12, b"name", 0) + name
-        value = struct.pack(">I4s2I", len(value) + 16, b"data", 0x1, 0) + value
+        mean = struct_pack(">I4sI", len(mean) + 12, b"mean", 0) + mean
+        name = struct_pack(">I4sI", len(name) + 12, b"name", 0) + name
+        value = struct_pack(">I4s2I", len(value) + 16, b"data", 0x1, 0) + value
         return Atom.render("----", mean + name + value)
 
     def __parse_pair(self, atom, data):
-        self[atom.name] = struct.unpack(">2H", data[18:22])
+        self[atom.name] = struct_unpack(">2H", data[18:22])
     def __render_pair(self, key, value):
         track, total = value
         if 0 <= track < 1 << 16 and 0 <= total < 1 << 16:
-            data = struct.pack(">4H", 0, track, total, 0)
+            data = struct_pack(">4H", 0, track, total, 0)
             return self.__render_data(key, 0, data)
         else:
             raise M4AMetadataValueError("invalid numeric pair %r" % (value,))
@@ -350,7 +350,7 @@ class M4ATags(DictProxy, Metadata):
     def __render_pair_no_trailing(self, key, value):
         track, total = value
         if 0 <= track < 1 << 16 and 0 <= total < 1 << 16:
-            data = struct.pack(">3H", 0, track, total)
+            data = struct_pack(">3H", 0, track, total)
             return self.__render_data(key, 0, data)
         else:
             raise M4AMetadataValueError("invalid numeric pair %r" % (value,))
@@ -375,10 +375,10 @@ class M4ATags(DictProxy, Metadata):
         except TypeError: self[atom.name] = False
 
     def __render_compilation(self, key, value):
-        return self.__render_data(key, 0x15, bytes([bool(value)]))
+        return self.__render_data(key, 0x15, bytearray([bool(value)]))
 
     def __parse_cover(self, atom, data):
-        length, name, imageformat = struct.unpack(">I4sI", data[:12])
+        length, name, imageformat = struct_unpack(">I4sI", data[:12])
         if name != b"data":
             raise M4AMetadataError(
                 "unexpected atom %r inside 'covr'" % name)
@@ -390,7 +390,7 @@ class M4ATags(DictProxy, Metadata):
         except AttributeError: imageformat = M4ACover.FORMAT_JPEG
         if isinstance(value, str):
             value = value.encode()
-        data = Atom.render("data", struct.pack(">2I", imageformat, 0) + value)
+        data = Atom.render("data", struct_pack(">2I", imageformat, 0) + value)
         return Atom.render(key, data)
 
     def __parse_text(self, atom, data):
@@ -441,15 +441,15 @@ class M4AInfo(object):
 
         mdhd = atoms["moov.trak.mdia.mdhd"]
         fileobj.seek(mdhd.offset)
-        data = fileobj.read(mdhd.length)
+        data = bytearray(fileobj.read(mdhd.length))
         if data[8] == 0:
             offset = 20
             fmt = ">2I"
         else:
             offset = 28
             fmt = ">IQ"
-        end = offset + struct.calcsize(fmt)
-        unit, length = struct.unpack(fmt, data[offset:end])
+        end = offset + struct_calcsize(fmt)
+        unit, length = struct_unpack(fmt, data[offset:end])
         self.length = float(length) / unit
 
         try:
@@ -481,12 +481,12 @@ class M4A(FileType):
             atoms = Atoms(fileobj)
             try: self.info = M4AInfo(atoms, fileobj)
             except Exception as err:
-                raise M4AStreamInfoError(err).with_traceback(sys.exc_info()[2])
+                raise M4AStreamInfoError(err)
             try: self.tags = M4ATags(atoms, fileobj)
             except M4AMetadataError:
                 self.tags = None
             except Exception as err:
-                raise M4AMetadataError(err).with_traceback(sys.exc_info()[2])
+                raise M4AMetadataError(err)
         finally:
             fileobj.close()
 

@@ -143,7 +143,7 @@ class TOggPage(TestCase):
             page.sequence = seq
         pages[1].serial = 2
         pages[1].sequence = 100
-        data = BytesIO(b"".join([page.write() for page in pages]))
+        data = BytesIO(bytearray().join([page.write() for page in pages]))
         OggPage.renumber(data, 0, 20)
         data.seek(0)
         pages = [OggPage(data) for i in range(10)]
@@ -292,7 +292,7 @@ class TOggPage(TestCase):
     def test_find_last(self):
         pages = [OggPage() for i in range(10)]
         for i, page in enumerate(pages): page.sequence = i
-        data = BytesIO(b"".join([page.write() for page in pages]))
+        data = BytesIO(bytearray().join([page.write() for page in pages]))
         self.failUnlessEqual(
             OggPage.find_last(data, pages[0].serial), pages[-1])
 
@@ -300,7 +300,7 @@ class TOggPage(TestCase):
         pages = [OggPage() for i in range(10)]
         pages[-1].last = True
         for i, page in enumerate(pages): page.sequence = i
-        data = BytesIO(b"".join([page.write() for page in pages]))
+        data = BytesIO(bytearray().join([page.write() for page in pages]))
         self.failUnlessEqual(
             OggPage.find_last(data, pages[0].serial), pages[-1])
 
@@ -309,14 +309,14 @@ class TOggPage(TestCase):
         for i, page in enumerate(pages): page.sequence = i
         pages[-2].last = True
         pages[-1].serial = pages[0].serial + 1
-        data = BytesIO(b"".join([page.write() for page in pages]))
+        data = BytesIO(bytearray().join([page.write() for page in pages]))
         self.failUnlessEqual(
             OggPage.find_last(data, pages[0].serial), pages[-2])
 
     def test_find_last_no_serial(self):
         pages = [OggPage() for i in range(10)]
         for i, page in enumerate(pages): page.sequence = i
-        data = BytesIO(b"".join([page.write() for page in pages]))
+        data = BytesIO(bytearray().join([page.write() for page in pages]))
         self.failUnless(OggPage.find_last(data, pages[0].serial + 1) is None)
 
     def test_find_last_invalid(self):

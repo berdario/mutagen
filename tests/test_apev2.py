@@ -21,11 +21,11 @@ LYRICS2 = os.path.join(DIR, "data", "apev2-lyricsv2.mp3")
 class Tis_valid_apev2_key(TestCase):
     uses_mmap = False
     def test_yes(self):
-        for key in ["foo", "Foo", "   f ~~~"]:
+        for key in [b"foo", b"Foo", b"   f ~~~"]:
             self.failUnless(is_valid_apev2_key(key))
 
     def test_no(self):
-        for key in ["\x11hi", "ffoo\xFF", "\u1234", "a", "", "foo" * 100]:
+        for key in [b"\x11hi", b"ffoo\xFF", u"\u1234".encode('UTF-8'), b"a", b"", b"foo" * 100]:
             self.failIf(is_valid_apev2_key(key))
 add(Tis_valid_apev2_key)
 
@@ -279,7 +279,7 @@ class TAPEBinaryValue(TestCase):
         self.failUnless(isinstance(self.value, self.BV))
 
     def test_const(self):
-        self.failUnlessEqual(str(self.sample), str(self.value))
+        self.failUnlessEqual(self.sample, self.value.value)
 
     def test_repr(self):
         repr(self.value)

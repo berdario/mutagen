@@ -30,15 +30,13 @@ interested in the 'ID3' class to start with.
 
 __all__ = ['ID3', 'ID3FileType', 'Frames', 'Open', 'delete']
 
-import struct
-
-from struct import unpack, pack, error as StructError
-from zlib import decompress, error as zlibError
+from struct import error as StructError
+from zlib import error as zlibError
 from functools import total_ordering
 from warnings import warn
 
 import mutagen
-from mutagen._util import insert_bytes, delete_bytes, DictProxy
+from mutagen._util import insert_bytes, delete_bytes, DictProxy, string_types, text_type, byte_types, struct_pack, struct_unpack, reraise, zlib_decompress as decompress
 
 class error(Exception): pass
 class ID3NoHeaderError(error, ValueError): pass
@@ -123,19 +121,21 @@ class ID3(DictProxy, mutagen.Metadata):
                 import sys
                 stack = sys.exc_info()[2]
                 try: self.__fileobj.seek(-128, 2)
-                except EnvironmentError: raise err.with_traceback(stack)
+                except EnvironmentError:
+                    reraise(type(err), err, stack)
                 else:
                     frames = ParseID3v1(self.__fileobj.read(128))
                     if frames is not None:
                         self.version = (1, 1)
                         list(map(self.add, list(frames.values())))
-                    else: raise err.with_traceback(stack)
+                    else:
+                        reraise(type(err), err, stack)
             else:
                 frames = self.__known_frames
                 if frames is None:
                     if (2, 3, 0) <= self.version: frames = Frames
                     elif (2, 2, 0) <= self.version: frames = Frames_2_2
-                data = self.__fullread(self.size - 10)
+                data = bytearray(self.__fullread(self.size - 10))
                 for frame in self.__read_frames(data, frames=frames):
                     if isinstance(frame, Frame): self.add(frame)
                     else: self.unknown_frames.append(frame)
@@ -206,7 +206,7 @@ class ID3(DictProxy, mutagen.Metadata):
     def __load_header(self):
         fn = self.filename
         data = self.__fullread(10)
-        id3, vmaj, vrev, flags, size = unpack('>3sBBB4s', data)
+        id3, vmaj, vrev, flags, size = struct_unpack('>3sBBB4s', data)
         self.__flags = flags
         self.size = BitPaddedInt(size) + 10
         self.version = (2, vmaj, vrev)
@@ -245,7 +245,7 @@ class ID3(DictProxy, mutagen.Metadata):
             else:
                 # "Where the 'Extended header size', currently 6 or 10 bytes,
                 # excludes itself."
-                self.__extsize = unpack('>L', extsize)[0]
+                self.__extsize = struct_unpack('>L', extsize)[0]
             if self.__extsize:
                 self.__extdata = self.__fullread(self.__extsize)
             else:
@@ -265,7 +265,7 @@ class ID3(DictProxy, mutagen.Metadata):
             if part == EMPTY:
                 bpioff = -((len(data) - o) % 10)
                 break
-            name, size, flags = unpack('>4sLH', part)
+            name, size, flags = struct_unpack('>4sLH', part)
             size = BitPaddedInt(size)
             o += 10 + size
             if name in frames:
@@ -281,7 +281,7 @@ class ID3(DictProxy, mutagen.Metadata):
             if part == EMPTY:
                 intoff = -((len(data) - o) % 10)
                 break
-            name, size, flags = unpack('>4sLH', part)
+            name, size, flags = struct_unpack('>4sLH', part)
             o += 10 + size
             if name in frames:
                 asint += 1
@@ -302,9 +302,9 @@ class ID3(DictProxy, mutagen.Metadata):
             bpi = self.__determine_bpi(data, frames)
             while data:
                 header = data[:10]
-                try: name, size, flags = unpack('>4sLH', header)
-                except struct.error: return # not enough header
-                if name.strip(b'\x00') == '': return
+                try: name, size, flags = struct_unpack('>4sLH', header)
+                except StructError: return # not enough header
+                if name.strip(b'\x00') == b'': return
                 size = bpi(size)
                 framedata = data[10:10+size]
                 data = data[10+size:]
@@ -320,9 +320,9 @@ class ID3(DictProxy, mutagen.Metadata):
         elif (2, 2, 0) <= self.version:
             while data:
                 header = data[0:6]
-                try: name, size = unpack('>3s3s', header)
-                except struct.error: return # not enough header
-                size, = struct.unpack('>L', b'\x00'+size)
+                try: name, size = struct_unpack('>3s3s', header)
+                except StructError: return # not enough header
+                size, = struct_unpack('>L', b'\x00'+size)
                 if name.strip(b'\x00') == '': return
                 framedata = data[6:6+size]
                 data = data[6+size:]
@@ -376,7 +376,7 @@ class ID3(DictProxy, mutagen.Metadata):
                 if err.errno != ENOENT: raise
             return
 
-        framedata = b''.join(framedata)
+        framedata = bytearray().join(framedata)
         framesize = len(framedata)
 
         if filename is None: filename = self.filename
@@ -388,8 +388,8 @@ class ID3(DictProxy, mutagen.Metadata):
             f = open(filename, 'rb+')
         try:
             idata = f.read(10)
-            try: id3, vmaj, vrev, flags, insize = unpack('>3sBBB4s', idata)
-            except struct.error: id3, insize = '', 0
+            try: id3, vmaj, vrev, flags, insize = struct_unpack('>3sBBB4s', idata)
+            except StructError: id3, insize = '', 0
             insize = BitPaddedInt(insize)
             if id3 != 'ID3': insize = -10
 
@@ -399,7 +399,7 @@ class ID3(DictProxy, mutagen.Metadata):
 
             framesize = BitPaddedInt.to_str(outsize, width=4)
             flags = 0
-            header = pack('>3sBBB4s', b'ID3', 4, 0, flags, framesize)
+            header = struct_pack('>3sBBB4s', b'ID3', 4, 0, flags, byte_types[0](framesize))
             data = header + framedata
 
             if (insize < outsize):
@@ -466,7 +466,7 @@ class ID3(DictProxy, mutagen.Metadata):
             #flags |= Frame.FLAG24_COMPRESS | Frame.FLAG24_DATALEN
             pass
         datasize = BitPaddedInt.to_str(len(framedata), width=4)
-        header = pack('>4s4sH', type(frame).__name__.encode(), datasize, flags)
+        header = struct_pack('>4s4sH', type(frame).__name__.encode(), byte_types[0](datasize), flags)
         return header + framedata
 
     def update_to_v24(self):
@@ -559,8 +559,8 @@ def delete(filename, delete_v1=True, delete_v2=True):
     if delete_v2:
         f.seek(0, 0)
         idata = f.read(10)
-        try: id3, vmaj, vrev, flags, insize = unpack('>3sBBB4s', idata)
-        except struct.error: id3, insize = '', -1
+        try: id3, vmaj, vrev, flags, insize = struct_unpack('>3sBBB4s', idata)
+        except StructError: id3, insize = '', -1
         insize = BitPaddedInt(insize)
         if id3 == b'ID3' and insize >= 0:
             delete_bytes(f, insize + 10, 0)
@@ -574,11 +574,11 @@ class BitPaddedInt(int):
             while value:
                 bytelist.append(value & ((1<<bits)-1))
                 value = value >> 8
-        if isinstance(value, str):
-            bytelist = [ord(byte) & mask for byte in value]
+        if isinstance(value, byte_types):
+            bytelist = [byte & mask for byte in bytearray(value)]
             if bigendian: bytelist.reverse()
-        if isinstance(value, bytes):
-            bytelist = [byte & mask for byte in value]
+        elif isinstance(value, text_type):
+            bytelist = [ord(byte) & mask for byte in value]
             if bigendian: bytelist.reverse()
         numeric_value = 0
         for shift, byte in zip(list(range(0, len(bytelist)*bits, bits)), bytelist):
@@ -606,7 +606,7 @@ class BitPaddedInt(int):
             raise ValueError('Value too wide (%d bytelist)' % len(bytelist))
         else: bytelist.extend([0] * (width-len(bytelist)))
         if bigendian: bytelist.reverse()
-        return bytes(bytelist)
+        return bytearray(bytelist)
     to_str = staticmethod(as_str)
 
 class BitPaddedLong(int):
@@ -628,7 +628,7 @@ class unsynch(object):
                 elif val != 0: append(val)
                 safe = True
         if not safe: raise ValueError('string ended unsafe')
-        return bytes(output)
+        return bytearray(output)
     decode = staticmethod(decode)
 
     def encode(value):
@@ -647,7 +647,7 @@ class unsynch(object):
                 append(val)
                 safe = True
         if not safe: append(0)
-        return bytes(output)
+        return bytearray(output)
     encode = staticmethod(encode)
 
 class Spec(object):
@@ -656,7 +656,7 @@ class Spec(object):
 
 class ByteSpec(Spec):
     def read(self, frame, data): return data[0], data[1:]
-    def write(self, frame, value): return bytes([value])
+    def write(self, frame, value): return bytearray([value])
     def validate(self, frame, value): return value
 
 class IntegerSpec(Spec):
@@ -681,7 +681,7 @@ class EncodingSpec(ByteSpec):
     def read(self, frame, data):
         enc, data = super(EncodingSpec, self).read(frame, data)
         if enc < 16: return enc, data
-        else: return 0, bytes([enc])+data
+        else: return 0, bytearray([enc])+data
 
     def validate(self, frame, value):
         if value is None: return None
@@ -695,11 +695,11 @@ class StringSpec(Spec):
     def read(s, frame, data): return data[:s.len], data[s.len:]
     def write(s, frame, value):
         if value is None: return b'\x00' * s.len
-        elif isinstance(value, bytes): return (value + b'\x00' * s.len)[:s.len]
+        elif isinstance(value, byte_types): return (value + b'\x00' * s.len)[:s.len]
         else: return (value.encode() + b'\x00' * s.len)[:s.len]
     def validate(s, frame, value):
         if value is None: return None
-        if isinstance(value, (str, bytes)) and len(value) == s.len: return value
+        if isinstance(value, byte_types + string_types) and len(value) == s.len: return value
         raise ValueError('Invalid StringSpec[%d] data: %r' % (s.len, value))
 
 class BinaryDataSpec(Spec):
@@ -865,11 +865,11 @@ class ChannelSpec(ByteSpec):
 
 class VolumeAdjustmentSpec(Spec):
     def read(self, frame, data):
-        value, = unpack('>h', data[0:2])
+        value, = struct_unpack('>h', data[0:2])
         return value/512.0, data[2:]
 
     def write(self, frame, value):
-        return pack('>h', int(round(value * 512)))
+        return struct_pack('>h', int(round(value * 512)))
 
     def validate(self, frame, value): return value
 
@@ -890,7 +890,7 @@ class VolumePeakSpec(Spec):
 
     def write(self, frame, value):
         # always write as 16 bits for sanity.
-        return b"\x10" + pack('>H', int(round(value * 32768)))
+        return b"\x10" + struct_pack('>H', int(round(value * 32768)))
 
     def validate(self, frame, value): return value
 
@@ -905,7 +905,7 @@ class SynchronizedTextSpec(EncodedTextSpec):
             except ValueError:
                 raise ID3JunkFrameError
             value = data[:value_idx].decode(encoding)
-            time, = struct.unpack(">I", data[value_idx+l:value_idx+l+4])
+            time, = struct_unpack(">I", data[value_idx+l:value_idx+l+4])
             texts.append((value, time))
             data = data[value_idx+l+4:]
         return texts, b""
@@ -915,7 +915,7 @@ class SynchronizedTextSpec(EncodedTextSpec):
         encoding, term = self._encodings[frame.encoding]
         for text, time in frame.text:
             text = text.encode(encoding) + term
-            data.append(text + struct.pack(">I", time))
+            data.append(text + struct_pack(">I", time))
         return b"".join(data)
 
     def validate(self, frame, value):
@@ -925,12 +925,12 @@ class KeyEventSpec(Spec):
     def read(self, frame, data):
         events = []
         while len(data) >= 5:
-            events.append(struct.unpack(">bI", data[:5]))
+            events.append(struct_unpack(">bI", data[:5]))
             data = data[5:]
         return events, data
 
     def write(self, frame, value):
-        return b"".join(struct.pack(">bI", *event) for event in value)
+        return b"".join(struct_pack(">bI", *event) for event in value)
 
     def validate(self, frame, value):
         return value
@@ -940,7 +940,7 @@ class VolumeAdjustmentsSpec(Spec):
     def read(self, frame, data):
         adjustments = {}
         while len(data) >= 4:
-            freq, adj = struct.unpack(">Hh", data[:4])
+            freq, adj = struct_unpack(">Hh", data[:4])
             data = data[4:]
             freq /= 2.0
             adj /= 512.0
@@ -950,7 +950,7 @@ class VolumeAdjustmentsSpec(Spec):
 
     def write(self, frame, value):
         value.sort()
-        return b"".join(struct.pack(">Hh", int(freq * 2), int(adj * 512))
+        return b"".join(struct_pack(">Hh", int(freq * 2), int(adj * 512))
                         for (freq, adj) in value)
 
     def validate(self, frame, value):
@@ -970,13 +970,13 @@ class ASPIIndexSpec(Spec):
         
         indexes = data[:frame.N * size]
         data = data[frame.N * size:]
-        return list(struct.unpack(">" + format * frame.N, indexes)), data
+        return list(struct_unpack(">" + format * frame.N, indexes)), data
 
     def write(self, frame, values):
         if frame.b == 16: format = "H"
         elif frame.b == 8: format = "B"
         else: raise ValueError("frame.b must be 8 or 16")
-        return struct.pack(">" + format * frame.N, *values)
+        return struct_pack(">" + format * frame.N, *values)
 
     def validate(self, frame, values):
         return values
@@ -1055,7 +1055,7 @@ class Frame(object):
         data = []
         for writer in self._framespec:
             data.append(writer.write(self, getattr(self, writer.name)))
-        return b''.join(data)
+        return bytearray(b'').join(data)
 
     def pprint(self):
         """Return a human-readable representation of the frame."""
@@ -1066,6 +1066,7 @@ class Frame(object):
 
     def fromData(cls, id3, tflags, data):
         """Construct this ID3 frame from raw string data."""
+        data = bytearray(data)
 
         if (2, 4, 0) <= id3.version:
             if tflags & (Frame.FLAG24_COMPRESS | Frame.FLAG24_DATALEN):
@@ -1095,7 +1096,7 @@ class Frame(object):
 
         elif (2, 3, 0) <= id3.version:
             if tflags & Frame.FLAG23_COMPRESS:
-                usize, = unpack('>L', data[:4])
+                usize, = struct_unpack('>L', data[:4])
                 data = data[4:]
             if tflags & Frame.FLAG23_ENCRYPT:
                 raise ID3EncryptionUnsupportedError
@@ -1154,7 +1155,7 @@ class FrameOpt(Frame):
         for writer in self._optionalspec:
             try: data.append(writer.write(self, getattr(self, writer.name)))
             except AttributeError: break
-        return b''.join(data)
+        return bytearray().join(data)
 
     def __repr__(self):
         kw = []
@@ -1182,11 +1183,10 @@ class TextFrame(Frame):
     """
 
     _framespec = [ EncodingSpec('encoding'),
-        MultiSpec('text', EncodedTextSpec('text'), sep='\u0000') ]
+        MultiSpec('text', EncodedTextSpec('text'), sep=u'\u0000') ]
     def __str__(self): return '\u0000'.join(self.text)
     def __eq__(self, other):
         if isinstance(other, str): return str(self) == other
-        elif isinstance(other, bytes): return str(self).encode() == other
         return self.text == other
     __hash__ = Frame.__hash__
     def __getitem__(self, item): return self.text[item]
@@ -1965,11 +1965,11 @@ def ParseID3v1(string):
     # wrote only the characters available - e.g. "1" or "" - into the
     # year field. To parse those, reduce the size of the year field.
     # Amazingly, "0s" works as a struct format string.
-    unpack_fmt = "3s30s30s30s%ds29sBB" % (len(string) - 124)
+    struct_unpack_fmt = "3s30s30s30s%ds29sBB" % (len(string) - 124)
 
     try:
-        tag, title, artist, album, year, comment, track, genre = unpack(
-            unpack_fmt, string)
+        tag, title, artist, album, year, comment, track, genre = struct_unpack(
+            struct_unpack_fmt, string)
     except StructError:
         return None
 
@@ -2016,7 +2016,7 @@ def MakeID3v1(id3):
     v1["comment"] = cmnt + (b"\x00" * (29 - len(cmnt)))
 
     if "TRCK" in id3:
-        try: v1["track"] = bytes([+id3["TRCK"]])
+        try: v1["track"] = bytearray([+id3["TRCK"]])
         except ValueError: v1["track"] = b"\x00"
     else: v1["track"] = b"\x00"
 
@@ -2025,7 +2025,7 @@ def MakeID3v1(id3):
         except IndexError: pass
         else:
             if genre in TCON.GENRES:
-                v1["genre"] = bytes([TCON.GENRES.index(genre)])
+                v1["genre"] = bytearray([TCON.GENRES.index(genre)])
     if "genre" not in v1:
         v1["genre"] = b"\xff"
 
@@ -2092,3 +2092,7 @@ class ID3FileType(mutagen.FileType):
             self.info = self._Info(fileobj, offset)
         finally:
             fileobj.close()
+
+
+def a():
+	pass

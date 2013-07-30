@@ -21,12 +21,11 @@ http://flac.sourceforge.net/format.html
 
 __all__ = ["FLAC", "Open", "delete"]
 
-import struct
 from io import BytesIO
 from functools import reduce
 from ._vorbis import VCommentDict
 from mutagen import FileType
-from mutagen._util import insert_bytes
+from mutagen._util import insert_bytes, struct_pack, struct_unpack, struct_calcsize
 from mutagen.id3 import BitPaddedInt
 
 class error(IOError): pass
@@ -34,9 +33,9 @@ class FLACNoHeaderError(error): pass
 class FLACVorbisError(ValueError, error): pass
 
 def to_int_be(string):
-    """Convert an arbitrarily-long string to a long using big-endian
+    """Convert an arbitrarily-long bytestring to a long using big-endian
     byte order."""
-    return reduce(lambda a, b: (a << 8) + b, string, 0)
+    return reduce(lambda a, b: (a << 8) + b, bytearray(string), 0)
 
 class MetadataBlock(object):
     """A generic block of FLAC metadata.
@@ -68,12 +67,12 @@ class MetadataBlock(object):
         codes = [[block.code, block.write()] for block in blocks]
         codes[-1][0] |= 128
         for code, datum in codes:
-            byte = bytes([code])
+            byte = bytearray([code])
             if len(datum) > 2**24:
                 raise error("block is too long to write")
-            length = struct.pack(">I", len(datum))[-3:]
+            length = struct_pack(">I", len(datum))[-3:]
             data.append(byte + length + datum)
-        return b"".join(data)
+        return bytearray().join(data)
     writeblocks = staticmethod(writeblocks)
 
     def group_padding(blocks):
@@ -147,27 +146,27 @@ class StreamInfo(MetadataBlock):
 
     def write(self):
         f = BytesIO()
-        f.write(struct.pack(">I", self.min_blocksize)[-2:])
-        f.write(struct.pack(">I", self.max_blocksize)[-2:])
-        f.write(struct.pack(">I", self.min_framesize)[-3:])
-        f.write(struct.pack(">I", self.max_framesize)[-3:])
+        f.write(struct_pack(">I", self.min_blocksize)[-2:])
+        f.write(struct_pack(">I", self.max_blocksize)[-2:])
+        f.write(struct_pack(">I", self.min_framesize)[-3:])
+        f.write(struct_pack(">I", self.max_framesize)[-3:])
 
         # first 16 bits of sample rate
-        f.write(struct.pack(">I", self.sample_rate >> 4)[-2:])
+        f.write(struct_pack(">I", self.sample_rate >> 4)[-2:])
         # 4 bits sample, 3 channel, 1 bps
         byte = (self.sample_rate & 0xF) << 4
         byte += ((self.channels - 1) & 7) << 1
         byte += ((self.bits_per_sample - 1) >> 4) & 1
-        f.write(bytes([byte]))
+        f.write(bytearray([byte]))
         # 4 bits of bps, 4 of sample count
         byte = ((self.bits_per_sample - 1) & 0xF)  << 4
         byte += (self.total_samples >> 32) & 0xF
-        f.write(bytes([byte]))
+        f.write(bytearray([byte]))
         # last 32 of sample count
-        f.write(struct.pack(">I", self.total_samples & 0xFFFFFFFF))
+        f.write(struct_pack(">I", self.total_samples & 0xFFFFFFFF))
         # MD5 signature
         sig = self.md5_signature
-        f.write(struct.pack(
+        f.write(struct_pack(
             ">4I", (sig >> 96) & 0xFFFFFFFF, (sig >> 64) & 0xFFFFFFFF,
             (sig >> 32) & 0xFFFFFFFF, sig & 0xFFFFFFFF))
         return f.getvalue()
@@ -206,7 +205,7 @@ class SeekTable(MetadataBlock):
     """
 
     __SEEKPOINT_FORMAT = '>QQH'
-    __SEEKPOINT_SIZE = struct.calcsize(__SEEKPOINT_FORMAT)
+    __SEEKPOINT_SIZE = struct_calcsize(__SEEKPOINT_FORMAT)
 
     code = 3
 
@@ -224,13 +223,13 @@ class SeekTable(MetadataBlock):
         sp = data.read(self.__SEEKPOINT_SIZE)
         while len(sp) == self.__SEEKPOINT_SIZE:
             self.seekpoints.append(SeekPoint(
-                *struct.unpack(self.__SEEKPOINT_FORMAT, sp)))
+                *struct_unpack(self.__SEEKPOINT_FORMAT, sp)))
             sp = data.read(self.__SEEKPOINT_SIZE)
 
     def write(self):
         f = BytesIO()
         for seekpoint in self.seekpoints:
-            packed = struct.pack(self.__SEEKPOINT_FORMAT,
+            packed = struct_pack(self.__SEEKPOINT_FORMAT,
                 seekpoint.first_sample, seekpoint.byte_offset,
                 seekpoint.num_samples)
             f.write(packed)
@@ -332,11 +331,11 @@ class CueSheet(MetadataBlock):
     """
 
     __CUESHEET_FORMAT = '>128sQB258xB'
-    __CUESHEET_SIZE = struct.calcsize(__CUESHEET_FORMAT)
+    __CUESHEET_SIZE = struct_calcsize(__CUESHEET_FORMAT)
     __CUESHEET_TRACK_FORMAT = '>QB12sB13xB'
-    __CUESHEET_TRACK_SIZE = struct.calcsize(__CUESHEET_TRACK_FORMAT)
+    __CUESHEET_TRACK_SIZE = struct_calcsize(__CUESHEET_TRACK_FORMAT)
     __CUESHEET_TRACKINDEX_FORMAT = '>QB3x'
-    __CUESHEET_TRACKINDEX_SIZE = struct.calcsize(__CUESHEET_TRACKINDEX_FORMAT)
+    __CUESHEET_TRACKINDEX_SIZE = struct_calcsize(__CUESHEET_TRACKINDEX_FORMAT)
 
     code = 5
 
@@ -360,7 +359,7 @@ class CueSheet(MetadataBlock):
     def load(self, data):
         header = data.read(self.__CUESHEET_SIZE)
         media_catalog_number, lead_in_samples, flags, num_tracks = \
-            struct.unpack(self.__CUESHEET_FORMAT, header)
+            struct_unpack(self.__CUESHEET_FORMAT, header)
         self.media_catalog_number = media_catalog_number.rstrip(b'\0')
         self.lead_in_samples = lead_in_samples
         self.compact_disc = bool(flags & 0x80)
@@ -368,7 +367,7 @@ class CueSheet(MetadataBlock):
         for i in range(num_tracks): 
             track = data.read(self.__CUESHEET_TRACK_SIZE)
             start_offset, track_number, isrc_padded, flags, num_indexes = \
-                struct.unpack(self.__CUESHEET_TRACK_FORMAT, track)
+                struct_unpack(self.__CUESHEET_TRACK_FORMAT, track)
             isrc = isrc_padded.rstrip(b'\0')
             type_ = (flags & 0x80) >> 7
             pre_emphasis = bool(flags & 0x40)
@@ -376,7 +375,7 @@ class CueSheet(MetadataBlock):
                 track_number, start_offset, isrc, type_, pre_emphasis)
             for j in range(num_indexes):
                 index = data.read(self.__CUESHEET_TRACKINDEX_SIZE)
-                index_offset, index_number = struct.unpack(
+                index_offset, index_number = struct_unpack(
                     self.__CUESHEET_TRACKINDEX_FORMAT, index)
                 val.indexes.append(
                     CueSheetTrackIndex(index_number, index_offset))
@@ -386,7 +385,7 @@ class CueSheet(MetadataBlock):
         f = BytesIO()
         flags = 0
         if self.compact_disc: flags |= 0x80
-        packed = struct.pack(
+        packed = struct_pack(
             self.__CUESHEET_FORMAT, self.media_catalog_number,
             self.lead_in_samples, flags, len(self.tracks))
         f.write(packed)
@@ -394,13 +393,13 @@ class CueSheet(MetadataBlock):
             track_flags = 0
             track_flags |= (track.type & 1) << 7
             if track.pre_emphasis: track_flags |= 0x40
-            track_packed = struct.pack(
+            track_packed = struct_pack(
                 self.__CUESHEET_TRACK_FORMAT, track.start_offset,
                 track.track_number, track.isrc, track_flags,
                 len(track.indexes))
             f.write(track_packed)
             for index in track.indexes:
-                index_packed = struct.pack(
+                index_packed = struct_pack(
                     self.__CUESHEET_TRACKINDEX_FORMAT,
                     index.index_offset, index.index_number)
                 f.write(index_packed)
@@ -453,23 +452,23 @@ class Picture(MetadataBlock):
     __hash__ = MetadataBlock.__hash__
 
     def load(self, data):
-        self.type, length = struct.unpack('>2I', data.read(8))
+        self.type, length = struct_unpack('>2I', data.read(8))
         self.mime = data.read(length).decode('UTF-8', 'replace')
-        length, = struct.unpack('>I', data.read(4))
+        length, = struct_unpack('>I', data.read(4))
         self.desc = data.read(length).decode('UTF-8', 'replace')
         (self.width, self.height, self.depth,
-         self.colors, length) = struct.unpack('>5I', data.read(20))
+         self.colors, length) = struct_unpack('>5I', data.read(20))
         self.data = data.read(length)
 
     def write(self):
         f = BytesIO()
         mime = self.mime.encode('UTF-8')
-        f.write(struct.pack('>2I', self.type, len(mime)))
+        f.write(struct_pack('>2I', self.type, len(mime)))
         f.write(mime)
         desc = self.desc.encode('UTF-8')
-        f.write(struct.pack('>I', len(desc)))
+        f.write(struct_pack('>I', len(desc)))
         f.write(desc)
-        f.write(struct.pack('>5I', self.width, self.height, self.depth,
+        f.write(struct_pack('>5I', self.width, self.height, self.depth,
                             self.colors, len(self.data)))
         f.write(self.data)
         return f.getvalue()

@@ -19,12 +19,11 @@ http://flac.sourceforge.net/ogg_mapping.html.
 
 __all__ = ["OggFLAC", "Open", "delete"]
 
-import struct
-
 from io import BytesIO
 
 from mutagen.flac import StreamInfo, VCFLACDict
 from mutagen.ogg import OggPage, OggFileType, error as OggError
+from mutagen._util import struct_pack, struct_unpack
 
 class error(OggError): pass
 class OggFLACHeaderError(error): pass
@@ -47,7 +46,7 @@ class OggFLACStreamInfo(StreamInfo):
         page = OggPage(data)
         while not page.packets[0].startswith(b"\x7FFLAC"):
             page = OggPage(data)
-        major, minor, self.packets, flac = struct.unpack(
+        major, minor, self.packets, flac = struct_unpack(
             ">BBH4s", page.packets[0][5:13])
         if flac != b"fLaC":
             raise OggFLACHeaderError("invalid FLAC marker (%r)" % flac)
@@ -101,7 +100,7 @@ class OggFLACVComment(VCFLACDict):
 
         # Set the new comment block.
         data = self.write()
-        data = bytes([packets[0][0]]) + struct.pack(">I", len(data))[-3:] + data
+        data = bytearray([packets[0][0]]) + struct_pack(">I", len(data))[-3:] + data
         packets[0] = data
 
         new_pages = OggPage.from_packets(packets, old_pages[0].sequence)

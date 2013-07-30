@@ -3,6 +3,7 @@ import shutil
 from unittest import TestCase
 from tests import add
 from mutagen.id3 import ID3, BitPaddedInt, COMR, Frames, Frames_2_2, ID3Warning, ID3JunkFrameError
+from mutagen._util import type, byte_types
 from io import BytesIO
 import warnings
 warnings.simplefilter('error', ID3Warning)
@@ -267,7 +268,7 @@ class ID3Tags(TestCase):
             ValueError, Frames["TPE1"].fromData, _23, 0x80, b"\x00\x00\x00\x00#")
 
     def test_junkframe(self):
-        self.assertRaises(ValueError, Frames["TPE1"].fromData, _24, 0, "")
+        self.assertRaises(ValueError, Frames["TPE1"].fromData, _24, 0, b"")
 
     def test_bad_sylt(self):
         self.assertRaises(
@@ -741,8 +742,8 @@ def TestReadTags():
             tag = TAG.fromData(_23, 0, data)
             self.failUnless(tag.HashKey)
             self.failUnless(tag.pprint())
-            if isinstance(value, str):
-                value = value.encode()
+            if isinstance(value, str) and not isinstance(tag, id3.TextFrame):
+                value = value.encode('utf-8')
             self.assertEquals(value, tag)
             if 'encoding' not in info:
                 self.assertRaises(AttributeError, getattr, tag, 'encoding')
@@ -755,7 +756,7 @@ def TestReadTags():
                     if isinstance(value, float):
                         self.failUnlessAlmostEqual(value, getattr(t, attr), 5)
                     else:
-                        if isinstance(value, str) and isinstance(getattr(t, attr), bytes):
+                        if isinstance(value, str) and isinstance(getattr(t, attr), byte_types):
                             # FIXME: since we're directly loading the data
                             # inside the tag objects, the easiest way is to
                             # store it and return it as bytes, but here it
@@ -893,7 +894,7 @@ class SpecSanityChecks(TestCase):
     def test_bytespec(self):
         from mutagen.id3 import ByteSpec
         s = ByteSpec('name')
-        self.assertEquals((97, b'bcdefg'), s.read(None, b'abcdefg'))
+        self.assertEquals((97, b'bcdefg'), s.read(None, bytearray(b'abcdefg')))
         self.assertEquals(b'a', s.write(None, 97))
         self.assertRaises(TypeError, s.write, None, 'abc')
         self.assertRaises(TypeError, s.write, None, None)
@@ -901,8 +902,8 @@ class SpecSanityChecks(TestCase):
     def test_encodingspec(self):
         from mutagen.id3 import EncodingSpec
         s = EncodingSpec('name')
-        self.assertEquals((0, b'abcdefg'), s.read(None, b'abcdefg'))
-        self.assertEquals((3, b'abcdefg'), s.read(None, b'\x03abcdefg'))
+        self.assertEquals((0, b'abcdefg'), s.read(None, bytearray(b'abcdefg')))
+        self.assertEquals((3, b'abcdefg'), s.read(None, bytearray(b'\x03abcdefg')))
         self.assertEquals(b'\x00', s.write(None, 0))
         self.assertRaises(TypeError, s.write, None, 'abc')
         self.assertRaises(TypeError, s.write, None, None)
@@ -910,7 +911,7 @@ class SpecSanityChecks(TestCase):
     def test_stringspec(self):
         from mutagen.id3 import StringSpec
         s = StringSpec('name', 3)
-        self.assertEquals((b'abc', b'defg'),  s.read(None, b'abcdefg'))
+        self.assertEquals((b'abc', b'defg'),  s.read(None, bytearray(b'abcdefg')))
         self.assertEquals(b'abc', s.write(None, 'abcdefg'))
         self.assertEquals(b'\x00\x00\x00', s.write(None, None))
         self.assertEquals(b'\x00\x00\x00', s.write(None, b'\x00'))
@@ -919,7 +920,7 @@ class SpecSanityChecks(TestCase):
     def test_binarydataspec(self):
         from mutagen.id3 import BinaryDataSpec
         s = BinaryDataSpec('name')
-        self.assertEquals((b'abcdefg', b''), s.read(None, b'abcdefg'))
+        self.assertEquals((b'abcdefg', b''), s.read(None, bytearray(b'abcdefg')))
         self.assertEquals(None,  s.write(None, None))
         self.assertEquals(43,  s.write(None, 43))
 
@@ -927,7 +928,7 @@ class SpecSanityChecks(TestCase):
         from mutagen.id3 import EncodedTextSpec, Frame
         s = EncodedTextSpec('name')
         f = Frame(); f.encoding = 0
-        self.assertEquals(('abcd', b'fg'), s.read(f, b'abcd\x00fg'))
+        self.assertEquals(('abcd', b'fg'), s.read(f, bytearray(b'abcd\x00fg')))
         self.assertEquals(b'abcdefg\x00', s.write(f, 'abcdefg'))
         self.assertRaises(AttributeError, s.write, f, None)
 
@@ -935,17 +936,17 @@ class SpecSanityChecks(TestCase):
         from mutagen.id3 import TimeStampSpec, Frame, ID3TimeStamp
         s = TimeStampSpec('name')
         f = Frame(); f.encoding = 0
-        self.assertEquals((ID3TimeStamp('ab'), b'fg'), s.read(f, b'ab\x00fg'))
-        self.assertEquals((ID3TimeStamp('1234'), b''), s.read(f, b'1234\x00'))
+        self.assertEquals((ID3TimeStamp('ab'), b'fg'), s.read(f, bytearray(b'ab\x00fg')))
+        self.assertEquals((ID3TimeStamp('1234'), b''), s.read(f, bytearray(b'1234\x00')))
         self.assertEquals(b'1234\x00', s.write(f, ID3TimeStamp('1234')))
         self.assertRaises(AttributeError, s.write, f, None)
 
     def test_volumeadjustmentspec(self):
         from mutagen.id3 import VolumeAdjustmentSpec
         s = VolumeAdjustmentSpec('gain')
-        self.assertEquals((0.0, b''), s.read(None, b'\x00\x00'))
-        self.assertEquals((2.0, b''), s.read(None, b'\x04\x00'))
-        self.assertEquals((-2.0, b''), s.read(None, b'\xfc\x00'))
+        self.assertEquals((0.0, b''), s.read(None, bytearray(b'\x00\x00')))
+        self.assertEquals((2.0, b''), s.read(None, bytearray(b'\x04\x00')))
+        self.assertEquals((-2.0, b''), s.read(None, bytearray(b'\xfc\x00')))
         self.assertEquals(b'\x00\x00', s.write(None, 0.0))
         self.assertEquals(b'\x04\x00', s.write(None, 2.0))
         self.assertEquals(b'\xfc\x00', s.write(None, -2.0))
@@ -1034,18 +1035,18 @@ class FrameSanityChecks(TestCase):
 
     def test_unsync_encode(self):
         from mutagen.id3 import unsynch as un
-        for d in (b'\xff\xff\xff\xff', b'\xff\xf0\x0f\x00', b'\xff\x00\x0f\xf0'):
+        for d in map(bytearray, (b'\xff\xff\xff\xff', b'\xff\xf0\x0f\x00', b'\xff\x00\x0f\xf0')):
             self.assertEquals(d, un.decode(un.encode(d)))
             self.assertNotEqual(d, un.encode(d))
-        self.assertEquals(b'\xff\x44', un.encode(b'\xff\x44'))
-        self.assertEquals(b'\xff\x00\x00', un.encode(b'\xff\x00'))
+        self.assertEquals(b'\xff\x44', un.encode(bytearray(b'\xff\x44')))
+        self.assertEquals(b'\xff\x00\x00', un.encode(bytearray(b'\xff\x00')))
 
     def test_unsync_decode(self):
         from mutagen.id3 import unsynch as un
-        self.assertRaises(ValueError, un.decode, b'\xff\xff\xff\xff')
-        self.assertRaises(ValueError, un.decode, b'\xff\xf0\x0f\x00')
-        self.assertRaises(ValueError, un.decode, b'\xff\xe0')
-        self.assertEquals(b'\xff\x44', un.decode(b'\xff\x44'))
+        self.assertRaises(ValueError, un.decode, bytearray(b'\xff\xff\xff\xff'))
+        self.assertRaises(ValueError, un.decode, bytearray(b'\xff\xf0\x0f\x00'))
+        self.assertRaises(ValueError, un.decode, bytearray(b'\xff\xe0'))
+        self.assertEquals(b'\xff\x44', un.decode(bytearray(b'\xff\x44')))
 
     def test_load_write(self):
         from mutagen.id3 import TPE1, Frames
@@ -1251,7 +1252,7 @@ class BrokenDiscarded(TestCase):
 
     def test_empty(self):
         from mutagen.id3 import TPE1, ID3JunkFrameError
-        self.assertRaises(ID3JunkFrameError, TPE1.fromData, _24, 0x00, '')
+        self.assertRaises(ID3JunkFrameError, TPE1.fromData, _24, 0x00, b'')
 
     def test_wacky_truncated_RVA2(self):
         from mutagen.id3 import RVA2, ID3JunkFrameError
@@ -1360,17 +1361,17 @@ class BrokenButParsed(TestCase):
         tagsbad = list(_24._ID3__read_frames(head + b'a'*255 + tail, Frames))
         self.assertEquals(2, len(tagsgood))
         self.assertEquals(2, len(tagsbad))
-        self.assertEquals(b'a'*127, tagsgood[0])
-        self.assertEquals(b'a'*255, tagsbad[0])
-        self.assertEquals(b'Yay!', tagsgood[1])
-        self.assertEquals(b'Yay!', tagsbad[1])
+        self.assertEquals('a'*127, tagsgood[0])
+        self.assertEquals('a'*255, tagsbad[0])
+        self.assertEquals('Yay!', tagsgood[1])
+        self.assertEquals('Yay!', tagsbad[1])
 
         tagsgood = list(_24._ID3__read_frames(head + b'a'*127, Frames))
         tagsbad = list(_24._ID3__read_frames(head + b'a'*255, Frames))
         self.assertEquals(1, len(tagsgood))
         self.assertEquals(1, len(tagsbad))
-        self.assertEquals(b'a'*127, tagsgood[0])
-        self.assertEquals(b'a'*255, tagsbad[0])
+        self.assertEquals('a'*127, tagsgood[0])
+        self.assertEquals('a'*255, tagsbad[0])
 
 
 class TimeStamp(TestCase):

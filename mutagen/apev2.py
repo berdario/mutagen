@@ -32,13 +32,15 @@ http://wiki.hydrogenaudio.org/index.php?title=APEv2_specification.
 
 __all__ = ["APEv2", "APEv2File", "Open", "delete"]
 
-import struct
 from io import BytesIO
 from functools import total_ordering
 
+from mutagen._util import struct_pack, utf8
+
 def is_valid_apev2_key(key):
-    return (2 <= len(key) <= 255 and min(key) >= ' ' and max(key) <= '~' and
-            key not in ["OggS", "TAG", "ID3", "MP+"])
+    key = utf8(key)
+    return (2 <= len(key) <= 255 and min(key) >= ord(' ') and max(key) <= ord('~') and
+            key not in [b"OggS", b"TAG", b"ID3", b"MP+"])
 
 # There are three different kinds of APE tag values.
 # "0: Item contains text information coded in UTF-8
@@ -276,7 +278,7 @@ class APEv2(DictMixin, Metadata):
                 value = APEValue(utf8(value), TEXT)
             elif isinstance(value, list):
                 # list? text.
-                value = APEValue(b"\0".join(map(utf8, value)), TEXT)
+                value = APEValue(bytearray([0]).join(map(utf8, value)), TEXT)
             else:
                 try: value.decode("utf-8")
                 except UnicodeError:
@@ -320,17 +322,17 @@ class APEv2(DictMixin, Metadata):
         # be sorted by importance/byte, but this is not feasible."
         tags = sorted((v._internal(k) for k, v in list(self.items())), key=len)
         num_tags = len(tags)
-        tags = b"".join(tags)
+        tags = bytearray().join(tags)
 
         # tag string, version, tag size, item count, flags
-        header = struct.pack("<8s 4I 8x", b"APETAGEX", 2000, len(tags)+32,
+        header = struct_pack("<8s 4I 8x", b"APETAGEX", 2000, len(tags)+32,
                              num_tags, HAS_HEADER|IS_HEADER)
         fileobj.write(header)
 
         fileobj.write(tags)
 
         # tag string, version, tag size, item count, flags
-        footer = struct.pack("<8s 4I 8x", b"APETAGEX", 2000, len(tags) + 32,
+        footer = struct_pack("<8s 4I 8x", b"APETAGEX", 2000, len(tags) + 32,
                              num_tags, HAS_HEADER)
         fileobj.write(footer)
         fileobj.close()
@@ -384,7 +386,7 @@ class _APEValue(object):
     def _internal(self, key):
         if isinstance(key, str):
             key = key.encode()
-        return struct.pack("<2I", len(self.value), self.kind << 1) + \
+        return struct_pack("<2I", len(self.value), self.kind << 1) + \
             key + b"\0" + self.value
 
     def __repr__(self):
@@ -430,9 +432,6 @@ class APEBinaryValue(_APEValue):
     """An APEv2 binary value."""
 
     def pprint(self): return "[%d bytes]" % len(self)
-    
-    def __str__(self):
-        return str(self.value)
 
 class APEExtValue(_APEValue):
     """An APEv2 external value.

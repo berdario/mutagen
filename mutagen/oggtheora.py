@@ -18,10 +18,9 @@ Based on the specification at http://theora.org/doc/Theora_I_spec.pdf.
 
 __all__ = ["OggTheora", "Open", "delete"]
 
-import struct
-
 from mutagen._vorbis import VCommentDict
 from mutagen.ogg import OggPage, OggFileType, error as OggError
+from mutagen._util import struct_unpack
 
 class error(OggError): pass
 class OggTheoraHeaderError(error): pass
@@ -44,13 +43,13 @@ class OggTheoraInfo(object):
             raise OggTheoraHeaderError(
                 "page has ID header, but doesn't start a stream")
         data = page.packets[0]
-        vmaj, vmin = struct.unpack("2B", data[7:9])
+        vmaj, vmin = struct_unpack("2B", data[7:9])
         if (vmaj, vmin) != (3, 2):
             raise OggTheoraHeaderError(
                 "found Theora version %d.%d != 3.2" % (vmaj, vmin))
-        fps_num, fps_den = struct.unpack(">2I", data[22:30])
+        fps_num, fps_den = struct_unpack(">2I", data[22:30])
         self.fps = fps_num / float(fps_den)
-        self.bitrate = struct.unpack(">I", data[37:40] + b"\x00")[0]
+        self.bitrate = struct_unpack(">I", data[37:40] + b"\x00")[0]
         self.serial = page.serial
 
     def pprint(self):

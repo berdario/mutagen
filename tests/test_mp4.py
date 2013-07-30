@@ -1,13 +1,12 @@
 import os
 import shutil
-import struct
 
 from io import BytesIO
 from tempfile import mkstemp
 from tests import TestCase, add
 from mutagen.mp4 import MP4, Atom, Atoms, MP4Tags, MP4Info, \
      delete, MP4Cover, MP4MetadataError
-from mutagen._util import cdata
+from mutagen._util import cdata, struct_unpack
 try: from os.path import devnull
 except ImportError: devnull = "/dev/null"
 
@@ -431,24 +430,24 @@ class TMP4(TestCase):
         atoms = Atoms(fileobj)
         moov = atoms['moov']
         samples = []
-        for atom in moov.findall('stco', True):
+        for atom in moov.findall(b'stco', True):
             fileobj.seek(atom.offset + 12)
             data = fileobj.read(atom.length - 12)
             fmt = ">%dI" % cdata.uint_be(data[:4])
-            offsets = struct.unpack(fmt, data[4:])
+            offsets = struct_unpack(fmt, data[4:])
             for offset in offsets:
                 fileobj.seek(offset)
                 samples.append(fileobj.read(8))
-        for atom in moov.findall('co64', True):
+        for atom in moov.findall(b'co64', True):
             fileobj.seek(atom.offset + 12)
             data = fileobj.read(atom.length - 12)
             fmt = ">%dQ" % cdata.uint_be(data[:4])
-            offsets = struct.unpack(fmt, data[4:])
+            offsets = struct_unpack(fmt, data[4:])
             for offset in offsets:
                 fileobj.seek(offset)
                 samples.append(fileobj.read(8))
         try:
-            for atom in atoms["moof"].findall('tfhd', True):
+            for atom in atoms["moof"].findall(b'tfhd', True):
                 data = fileobj.read(atom.length - 9)
                 flags = cdata.uint_be(b"\x00" + data[:3])
                 if flags & 1:

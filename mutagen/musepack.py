@@ -18,11 +18,9 @@ For more information, see http://www.musepack.net/.
 
 __all__ = ["Musepack", "Open", "delete"]
 
-import struct
-
 from mutagen.apev2 import APEv2File, error, delete
 from mutagen.id3 import BitPaddedInt
-from mutagen._util import cdata
+from mutagen._util import cdata, struct_unpack
 
 class MusepackHeaderError(error): pass
 
@@ -49,14 +47,14 @@ class MusepackInfo(object):
     """
 
     def __init__(self, fileobj):
-        header = fileobj.read(32)
+        header = bytearray(fileobj.read(32))
         if len(header) != 32:
             raise MusepackHeaderError("not a Musepack file")
         # Skip ID3v2 tags
         if header[:3] == b"ID3":
             size = 10 + BitPaddedInt(header[6:10])
             fileobj.seek(size)
-            header = fileobj.read(32)
+            header = bytearray(fileobj.read(32))
             if len(header) != 32:
                 raise MusepackHeaderError("not a Musepack file")
         # SV7
@@ -67,9 +65,9 @@ class MusepackInfo(object):
             frames = cdata.uint_le(header[4:8])
             flags = cdata.uint_le(header[8:12])
 
-            self.title_peak, self.title_gain = struct.unpack(
+            self.title_peak, self.title_gain = struct_unpack(
                 "<Hh", header[12:16])
-            self.album_peak, self.album_gain = struct.unpack(
+            self.album_peak, self.album_gain = struct_unpack(
                 "<Hh", header[16:20])
             self.title_gain /= 100.0
             self.album_gain /= 100.0

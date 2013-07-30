@@ -8,9 +8,10 @@
 """MPEG audio stream information and tags."""
 
 import os
-import struct
+from struct import error as struct_error
 
 from mutagen.id3 import ID3FileType, BitPaddedInt, delete
+from mutagen._util import struct_unpack
 
 __all__ = ["MP3", "Open", "delete", "MP3"]
 
@@ -83,8 +84,8 @@ class MPEGInfo(object):
         if offset is None:
             fileobj.seek(0, 0)
             idata = fileobj.read(10)
-            try: id3, insize = struct.unpack('>3sxxx4s', idata)
-            except struct.error: id3, insize = '', 0
+            try: id3, insize = struct_unpack('>3sxxx4s', idata)
+            except struct_error: id3, insize = '', 0
             insize = BitPaddedInt(insize)
             if id3 == b'ID3' and insize > 0:
                 offset = insize
@@ -117,7 +118,7 @@ class MPEGInfo(object):
         
         frame_1 = data.find(b"\xff")
         while 0 <= frame_1 <= len(data) - 4:
-            frame_data = struct.unpack(">I", data[frame_1:frame_1 + 4])[0]
+            frame_data = struct_unpack(">I", data[frame_1:frame_1 + 4])[0]
             if (frame_data >> 16) & 0xE0 != 0xE0:
                 frame_1 = data.find(b"\xff", frame_1 + 2)
             else:
@@ -168,9 +169,9 @@ class MPEGInfo(object):
             if possible > len(data) + 4:
                 raise HeaderNotFoundError("can't sync to second MPEG frame")
             try:
-                frame_data = struct.unpack(
+                frame_data = struct_unpack(
                     ">H", data[possible:possible + 2])[0]
-            except struct.error:
+            except struct_error:
                 raise HeaderNotFoundError("can't sync to second MPEG frame")
             if frame_data & 0xFFE0 != 0xFFE0:
                 raise HeaderNotFoundError("can't sync to second MPEG frame")
@@ -194,22 +195,22 @@ class MPEGInfo(object):
             else:
                 # If a VBRI header was found, this is definitely MPEG audio.
                 self.sketchy = False
-                vbri_version = struct.unpack('>H', data[vbri + 4:vbri + 6])[0]
+                vbri_version = struct_unpack('>H', data[vbri + 4:vbri + 6])[0]
                 if vbri_version == 1:
-                    frame_count = struct.unpack(
+                    frame_count = struct_unpack(
                         '>I', data[vbri + 14:vbri + 18])[0]
                     samples = frame_size * frame_count
                     self.length = (samples / self.sample_rate) or self.length
         else:
             # If a Xing header was found, this is definitely MPEG audio.
             self.sketchy = False
-            flags = struct.unpack('>I', data[xing + 4:xing + 8])[0]
+            flags = struct_unpack('>I', data[xing + 4:xing + 8])[0]
             if flags & 0x1:
-                frame_count = struct.unpack('>I', data[xing + 8:xing + 12])[0]
+                frame_count = struct_unpack('>I', data[xing + 8:xing + 12])[0]
                 samples = frame_size * frame_count
                 self.length = (samples / self.sample_rate) or self.length
             if flags & 0x2:
-                byte = struct.unpack('>I', data[xing + 12:xing + 16])[0]
+                byte = struct_unpack('>I', data[xing + 12:xing + 16])[0]
                 self.bitrate = int((byte * 8) // self.length)
 
         # If the bitrate * the length is nowhere near the file

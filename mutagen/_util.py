@@ -12,10 +12,39 @@ You should not rely on the interfaces here being stable. They are
 intended for internal use in Mutagen only.
 """
 
+import sys
 import struct
-from functools import total_ordering
+from functools import total_ordering, wraps
+from zlib import decompress
 
 from fnmatch import fnmatchcase
+
+PY2 = sys.version_info[0] == 2
+
+if PY2:
+    native_str = str
+    text_type = unicode
+    string_types = (unicode, str)
+    byte_types = (str, bytearray)
+    buffer = buffer
+    exec("def reraise(tp, value, tb): raise tp, value, tb")
+
+    @wraps(decompress)
+    def zlib_decompress(string, *args, **kwargs):
+        return bytearray(decompress(str(string), *args, **kwargs))
+else:
+    native_str = str
+    text_type = str
+    string_types = (str, )
+    byte_types = (bytes, bytearray)
+    buffer = memoryview
+    def reraise(tp, value, tb):
+        raise tp(value).with_traceback(tb)
+
+    @wraps(decompress)
+    def zlib_decompress(string, *args, **kwargs):
+        return bytearray(decompress(string, *args, **kwargs))
+
 
 @total_ordering
 class DictMixin(object):
@@ -122,48 +151,57 @@ class DictProxy(DictMixin):
     def keys(self):
         return list(self.__dict.keys())
 
+def struct_unpack(fmt, buf):
+    return struct.unpack(fmt.encode(), buf)
+
+def struct_pack(fmt, *args):
+    return struct.pack(fmt.encode(), *args)
+
+def struct_calcsize(fmt):
+    return struct.calcsize(fmt.encode())
+
 class cdata(object):
     """C character buffer to Python numeric type conversions."""
 
     from struct import error
 
-    short_le = staticmethod(lambda data: struct.unpack('<h', data)[0])
-    ushort_le = staticmethod(lambda data: struct.unpack('<H', data)[0])
+    short_le = staticmethod(lambda data: struct_unpack('<h', data)[0])
+    ushort_le = staticmethod(lambda data: struct_unpack('<H', data)[0])
 
-    short_be = staticmethod(lambda data: struct.unpack('>h', data)[0])
-    ushort_be = staticmethod(lambda data: struct.unpack('>H', data)[0])
+    short_be = staticmethod(lambda data: struct_unpack('>h', data)[0])
+    ushort_be = staticmethod(lambda data: struct_unpack('>H', data)[0])
 
-    int_le = staticmethod(lambda data: struct.unpack('<i', data)[0])
-    uint_le = staticmethod(lambda data: struct.unpack('<I', data)[0])
+    int_le = staticmethod(lambda data: struct_unpack('<i', data)[0])
+    uint_le = staticmethod(lambda data: struct_unpack('<I', data)[0])
 
-    int_be = staticmethod(lambda data: struct.unpack('>i', data)[0])
-    uint_be = staticmethod(lambda data: struct.unpack('>I', data)[0])
+    int_be = staticmethod(lambda data: struct_unpack('>i', data)[0])
+    uint_be = staticmethod(lambda data: struct_unpack('>I', data)[0])
 
-    longlong_le = staticmethod(lambda data: struct.unpack('<q', data)[0])
-    ulonglong_le = staticmethod(lambda data: struct.unpack('<Q', data)[0])
+    longlong_le = staticmethod(lambda data: struct_unpack('<q', data)[0])
+    ulonglong_le = staticmethod(lambda data: struct_unpack('<Q', data)[0])
 
-    longlong_be = staticmethod(lambda data: struct.unpack('>q', data)[0])
-    ulonglong_be = staticmethod(lambda data: struct.unpack('>Q', data)[0])
+    longlong_be = staticmethod(lambda data: struct_unpack('>q', data)[0])
+    ulonglong_be = staticmethod(lambda data: struct_unpack('>Q', data)[0])
 
-    to_short_le = staticmethod(lambda data: struct.pack('<h', data))
-    to_ushort_le = staticmethod(lambda data: struct.pack('<H', data))
+    to_short_le = staticmethod(lambda data: struct_pack('<h', data))
+    to_ushort_le = staticmethod(lambda data: struct_pack('<H', data))
 
-    to_short_be = staticmethod(lambda data: struct.pack('>h', data))
-    to_ushort_be = staticmethod(lambda data: struct.pack('>H', data))
+    to_short_be = staticmethod(lambda data: struct_pack('>h', data))
+    to_ushort_be = staticmethod(lambda data: struct_pack('>H', data))
 
-    to_int_le = staticmethod(lambda data: struct.pack('<i', data))
-    to_uint_le = staticmethod(lambda data: struct.pack('<I', data))
+    to_int_le = staticmethod(lambda data: struct_pack('<i', data))
+    to_uint_le = staticmethod(lambda data: struct_pack('<I', data))
 
-    to_int_be = staticmethod(lambda data: struct.pack('>i', data))
-    to_uint_be = staticmethod(lambda data: struct.pack('>I', data))
+    to_int_be = staticmethod(lambda data: struct_pack('>i', data))
+    to_uint_be = staticmethod(lambda data: struct_pack('>I', data))
 
-    to_longlong_le = staticmethod(lambda data: struct.pack('<q', data))
-    to_ulonglong_le = staticmethod(lambda data: struct.pack('<Q', data))
+    to_longlong_le = staticmethod(lambda data: struct_pack('<q', data))
+    to_ulonglong_le = staticmethod(lambda data: struct_pack('<Q', data))
 
-    to_longlong_be = staticmethod(lambda data: struct.pack('>q', data))
-    to_ulonglong_be = staticmethod(lambda data: struct.pack('>Q', data))
+    to_longlong_be = staticmethod(lambda data: struct_pack('>q', data))
+    to_ulonglong_be = staticmethod(lambda data: struct_pack('>Q', data))
 
-    bitswap = bytes(sum([((val >> i) & 1) << (7-i) for i in range(8)]) for val in range(256))
+    bitswap = bytearray(sum([((val >> i) & 1) << (7-i) for i in range(8)]) for val in range(256))
 
     test_bit = staticmethod(lambda value, n: bool((value >> n) & 1))
 
@@ -220,9 +258,11 @@ def insert_bytes(fobj, size, offset, BUFFER_SIZE=2**16):
     try:
         try:
             import mmap
-            map = mmap.mmap(fobj.fileno(), filesize + size)
-            try: map.move(offset + size, offset, movesize)
-            finally: map.close()
+            memmap = mmap.mmap(fobj.fileno(), filesize + size)
+            try:
+                memmap.move(offset + size, offset, movesize)
+            finally:
+                memmap.close()
         except (ValueError, EnvironmentError, ImportError):
             # handle broken mmap scenarios
             locked = lock(fobj)
@@ -279,9 +319,9 @@ def delete_bytes(fobj, size, offset, BUFFER_SIZE=2**16):
             fobj.flush()
             try:
                 import mmap
-                map = mmap.mmap(fobj.fileno(), filesize)
-                try: map.move(offset, offset + size, movesize)
-                finally: map.close()
+                memmap = mmap.mmap(fobj.fileno(), filesize)
+                try: memmap.move(offset, offset + size, movesize)
+                finally: memmap.close()
             except (ValueError, EnvironmentError, ImportError):
                 # handle broken mmap scenarios
                 locked = lock(fobj)
@@ -301,10 +341,10 @@ def delete_bytes(fobj, size, offset, BUFFER_SIZE=2**16):
 
 def utf8(data):
     """Convert a basestring to a valid UTF-8 str."""
-    if isinstance(data, bytes):
-        return data.decode("utf-8", "replace").encode("utf-8")
-    elif isinstance(data, str):
-        return data.encode("utf-8")
+    if isinstance(data, byte_types):
+        return bytearray(data.decode("utf-8", "replace").encode("utf-8"))
+    elif isinstance(data, text_type):
+        return bytearray(data.encode("utf-8"))
     else: raise TypeError("only unicode/str types can be converted to UTF-8")
 
 def dict_match(d, key, default=None):
@@ -315,3 +355,16 @@ def dict_match(d, key, default=None):
             if fnmatchcase(key, pattern):
                 return value
     return default
+
+
+_type = type
+def type(cls, superclass=None, data=None):
+    if superclass is not None and data is not None:
+        if PY2 and isinstance(cls, unicode):
+            cls = cls.encode('ascii')
+        return _type(cls, superclass, data)
+    elif not (superclass is None and data is None):
+        raise TypeError("type() takes 1 or 3 arguments")
+    else:
+        return _type(cls)
+

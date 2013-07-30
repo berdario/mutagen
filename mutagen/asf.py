@@ -11,10 +11,9 @@
 
 __all__ = ["ASF", "Open"]
 
-import struct
 from functools import total_ordering
 from mutagen import FileType, Metadata
-from mutagen._util import insert_bytes, delete_bytes, DictMixin
+from mutagen._util import insert_bytes, delete_bytes, DictMixin, struct_pack, struct_unpack
 
 class error(IOError): pass
 class ASFError(error): pass
@@ -132,8 +131,8 @@ class ASFBaseAttribute(object):
     def render(self, name):
         name = name.encode("utf-16-le") + b"\x00\x00"
         data = self._render()
-        return (struct.pack("<H", len(name)) + name +
-                struct.pack("<HH", self.TYPE, len(data)) + data)
+        return (struct_pack("<H", len(name)) + name +
+                struct_pack("<HH", self.TYPE, len(data)) + data)
 
     def render_m(self, name):
         name = name.encode("utf-16-le") + b"\x00\x00"
@@ -141,7 +140,7 @@ class ASFBaseAttribute(object):
             data = self._render(dword=False)
         else:
             data = self._render()
-        return (struct.pack("<HHHHI", 0, self.stream or 0, len(name),
+        return (struct_pack("<HHHHI", 0, self.stream or 0, len(name),
                             self.TYPE, len(data)) + name + data)
 
     def render_ml(self, name):
@@ -150,7 +149,7 @@ class ASFBaseAttribute(object):
             data = self._render(dword=False)
         else:
             data = self._render()
-        return (struct.pack("<HHHHI", self.language or 0, self.stream or 0,
+        return (struct_pack("<HHHHI", self.language or 0, self.stream or 0,
                             len(name), self.TYPE, len(data)) + name + data)
 
     def __lt__(self, other):
@@ -209,15 +208,15 @@ class ASFBoolAttribute(ASFBaseAttribute):
 
     def parse(self, data, dword=True):
         if dword:
-            return struct.unpack("<I", data)[0] == 1
+            return struct_unpack("<I", data)[0] == 1
         else:
-            return struct.unpack("<H", data)[0] == 1
+            return struct_unpack("<H", data)[0] == 1
 
     def _render(self, dword=True):
         if dword:
-            return struct.pack("<I", int(self.value))
+            return struct_pack("<I", int(self.value))
         else:
-            return struct.pack("<H", int(self.value))
+            return struct_pack("<H", int(self.value))
 
     def data_size(self):
         return 4
@@ -236,10 +235,10 @@ class ASFDWordAttribute(ASFBaseAttribute):
     TYPE = 0x0003
 
     def parse(self, data):
-        return struct.unpack("<L", data)[0]
+        return struct_unpack("<L", data)[0]
 
     def _render(self):
-        return struct.pack("<L", self.value)
+        return struct_pack("<L", self.value)
 
     def data_size(self):
         return 4
@@ -258,10 +257,10 @@ class ASFQWordAttribute(ASFBaseAttribute):
     TYPE = 0x0004
 
     def parse(self, data):
-        return struct.unpack("<Q", data)[0]
+        return struct_unpack("<Q", data)[0]
 
     def _render(self):
-        return struct.pack("<Q", self.value)
+        return struct_pack("<Q", self.value)
 
     def data_size(self):
         return 8
@@ -280,10 +279,10 @@ class ASFWordAttribute(ASFBaseAttribute):
     TYPE = 0x0005
 
     def parse(self, data):
-        return struct.unpack("<H", data)[0]
+        return struct_unpack("<H", data)[0]
 
     def _render(self):
-        return struct.pack("<H", self.value)
+        return struct_pack("<H", self.value)
 
     def data_size(self):
         return 2
@@ -359,7 +358,7 @@ class BaseObject(object):
         self.data = data
 
     def render(self, asf):
-        data = self.GUID + struct.pack("<Q", len(self.data) + 24) + self.data
+        data = self.GUID + struct_pack("<Q", len(self.data) + 24) + self.data
         return data
 
 
@@ -381,7 +380,7 @@ class ContentDescriptionObject(BaseObject):
     def parse(self, asf, data, fileobj, size):
         super(ContentDescriptionObject, self).parse(asf, data, fileobj, size)
         asf.content_description_obj = self
-        lengths = struct.unpack("<HHHHH", data[:10])
+        lengths = struct_unpack("<HHHHH", data[:10])
         texts = []
         pos = 10
         for length in lengths:
@@ -409,8 +408,8 @@ class ContentDescriptionObject(BaseObject):
             else:
                 return b""
         texts = list(map(render_text, _standard_attribute_names))
-        data = struct.pack("<HHHHH", *map(len, texts)) + b"".join(texts)
-        return self.GUID + struct.pack("<Q", 24 + len(data)) + data
+        data = struct_pack("<HHHHH", *map(len, texts)) + b"".join(texts)
+        return self.GUID + struct_pack("<Q", 24 + len(data)) + data
 
 
 class ExtendedContentDescriptionObject(BaseObject):
@@ -420,14 +419,14 @@ class ExtendedContentDescriptionObject(BaseObject):
     def parse(self, asf, data, fileobj, size):
         super(ExtendedContentDescriptionObject, self).parse(asf, data, fileobj, size)
         asf.extended_content_description_obj = self
-        num_attributes, = struct.unpack("<H", data[0:2])
+        num_attributes, = struct_unpack("<H", data[0:2])
         pos = 2
         for i in range(num_attributes):
-            name_length, = struct.unpack("<H", data[pos:pos+2])
+            name_length, = struct_unpack("<H", data[pos:pos+2])
             pos += 2
             name = data[pos:pos+name_length].decode("utf-16-le").strip("\x00")
             pos += name_length
-            value_type, value_length = struct.unpack("<HH", data[pos:pos+4])
+            value_type, value_length = struct_unpack("<HH", data[pos:pos+4])
             pos += 4
             value = data[pos:pos+value_length]
             pos += value_length
@@ -437,7 +436,7 @@ class ExtendedContentDescriptionObject(BaseObject):
     def render(self, asf):
         attrs = list(asf.to_extended_content_description.items())
         data = b"".join([attr.render(name) for (name, attr) in attrs])
-        data = struct.pack("<QH", 26 + len(data), len(attrs)) + data
+        data = struct_pack("<QH", 26 + len(data), len(attrs)) + data
         return self.GUID + data
 
 
@@ -447,7 +446,7 @@ class FilePropertiesObject(BaseObject):
 
     def parse(self, asf, data, fileobj, size):
         super(FilePropertiesObject, self).parse(asf, data, fileobj, size)
-        length, _, preroll = struct.unpack("<QQQ", data[40:64])
+        length, _, preroll = struct_unpack("<QQQ", data[40:64])
         asf.info.length = length / 10000000.0 - preroll / 1000.0
 
 
@@ -457,7 +456,7 @@ class StreamPropertiesObject(BaseObject):
 
     def parse(self, asf, data, fileobj, size):
         super(StreamPropertiesObject, self).parse(asf, data, fileobj, size)
-        channels, sample_rate, bitrate = struct.unpack("<HII", data[56:66])
+        channels, sample_rate, bitrate = struct_unpack("<HII", data[56:66])
         asf.info.channels = channels
         asf.info.sample_rate = sample_rate
         asf.info.bitrate = bitrate * 8
@@ -470,11 +469,11 @@ class HeaderExtensionObject(BaseObject):
     def parse(self, asf, data, fileobj, size):
         super(HeaderExtensionObject, self).parse(asf, data, fileobj, size)
         asf.header_extension_obj = self
-        datasize, = struct.unpack("<I", data[18:22])
+        datasize, = struct_unpack("<I", data[18:22])
         datapos = 0
         self.objects = []
         while datapos < datasize:
-            guid, size = struct.unpack("<16sQ", data[22+datapos:22+datapos+24])
+            guid, size = struct_unpack("<16sQ", data[22+datapos:22+datapos+24])
             if guid in _object_types:
                 obj = _object_types[guid]()
             else:
@@ -485,10 +484,10 @@ class HeaderExtensionObject(BaseObject):
 
     def render(self, asf):
         data = b"".join([obj.render(asf) for obj in self.objects])
-        return (self.GUID + struct.pack("<Q", 24 + 16 + 6 + len(data)) +
+        return (self.GUID + struct_pack("<Q", 24 + 16 + 6 + len(data)) +
                 b"\x11\xD2\xD3\xAB\xBA\xA9\xcf\x11" +
                 b"\x8E\xE6\x00\xC0\x0C\x20\x53\x65" +
-                b"\x06\x00" + struct.pack("<I", len(data)) + data)
+                b"\x06\x00" + struct_pack("<I", len(data)) + data)
 
 
 class MetadataObject(BaseObject):
@@ -498,11 +497,11 @@ class MetadataObject(BaseObject):
     def parse(self, asf, data, fileobj, size):
         super(MetadataObject, self).parse(asf, data, fileobj, size)
         asf.metadata_obj = self
-        num_attributes, = struct.unpack("<H", data[0:2])
+        num_attributes, = struct_unpack("<H", data[0:2])
         pos = 2
         for i in range(num_attributes):
             (reserved, stream, name_length, value_type,
-             value_length) = struct.unpack("<HHHHI", data[pos:pos+12])
+             value_length) = struct_unpack("<HHHHI", data[pos:pos+12])
             pos += 12
             name = data[pos:pos+name_length].decode("utf-16-le").strip("\x00")
             pos += name_length
@@ -517,7 +516,7 @@ class MetadataObject(BaseObject):
     def render(self, asf):
         attrs = list(asf.to_metadata.items())
         data = b"".join([attr.render_m(name) for (name, attr) in attrs])
-        return (self.GUID + struct.pack("<QH", 26 + len(data), len(attrs)) +
+        return (self.GUID + struct_pack("<QH", 26 + len(data), len(attrs)) +
                 data)
 
 
@@ -528,11 +527,11 @@ class MetadataLibraryObject(BaseObject):
     def parse(self, asf, data, fileobj, size):
         super(MetadataLibraryObject, self).parse(asf, data, fileobj, size)
         asf.metadata_library_obj = self
-        num_attributes, = struct.unpack("<H", data[0:2])
+        num_attributes, = struct_unpack("<H", data[0:2])
         pos = 2
         for i in range(num_attributes):
             (language, stream, name_length, value_type,
-             value_length) = struct.unpack("<HHHHI", data[pos:pos+12])
+             value_length) = struct_unpack("<HHHHI", data[pos:pos+12])
             pos += 12
             name = data[pos:pos+name_length].decode("utf-16-le").strip("\x00")
             pos += name_length
@@ -547,7 +546,7 @@ class MetadataLibraryObject(BaseObject):
     def render(self, asf):
         attrs = asf.to_metadata_library
         data = b"".join([attr.render_ml(name) for (name, attr) in attrs])
-        return (self.GUID + struct.pack("<QH", 26 + len(data), len(attrs)) +
+        return (self.GUID + struct_pack("<QH", 26 + len(data), len(attrs)) +
                 data)
 
 
@@ -628,7 +627,7 @@ class ASF(FileType):
         # Render the header
         data = b"".join([obj.render(self) for obj in self.objects])
         data = (HeaderObject.GUID +
-                struct.pack("<QL", len(data) + 30, len(self.objects)) +
+                struct_pack("<QL", len(data) + 30, len(self.objects)) +
                 b"\x01\x02" + data)
 
         fileobj = open(self.filename, "rb+")
@@ -654,13 +653,13 @@ class ASF(FileType):
         self.metadata_obj = None
         self.metadata_library_obj = None
 
-        self.size, self.num_objects = struct.unpack("<QL", header[16:28])
+        self.size, self.num_objects = struct_unpack("<QL", header[16:28])
         self.objects = []
         for i in range(self.num_objects):
             self.__read_object(fileobj)
 
     def __read_object(self, fileobj):
-        guid, size = struct.unpack("<16sQ", fileobj.read(24))
+        guid, size = struct_unpack("<16sQ", fileobj.read(24))
         if guid in _object_types:
             obj = _object_types[guid]()
         else:

@@ -8,7 +8,7 @@
 """Read and write Vorbis comment data.
 
 Vorbis comments are freeform key/value pairs; keys are
-case-insensitive ASCII and values are Unicode strings. A key may have
+case-insensitive ASCII and values are UTF8 encoded. A key may have
 multiple values.
 
 The specification is at http://www.xiph.org/vorbis/doc/v-comment.html.
@@ -19,7 +19,7 @@ import sys
 from io import BytesIO
 
 import mutagen
-from mutagen._util import DictMixin, cdata
+from mutagen._util import DictMixin, cdata, reraise
 
 def is_valid_key(key):
     """Return true if a string is a valid Vorbis comment key.
@@ -32,7 +32,7 @@ def is_valid_key(key):
             key = key.encode('ascii')
         except UnicodeEncodeError:
             return False
-    for c in key:
+    for c in bytearray(key):
         if c < ord(" ") or c > ord("}") or c == ord("="): return False
     else: return bool(key)
 istag = is_valid_key
@@ -99,7 +99,7 @@ class VComment(mutagen.Metadata, list):
                     elif errors == "replace":
                         tag, value = "unknown%d" % i, string
                     else:
-                        raise VorbisEncodingError(str(err)).with_traceback(sys.exc_info()[2])
+                        reraise(VorbisEncodingError, str(err), sys.exc_info()[2])
                 try: tag = tag.encode('ascii', errors)
                 except UnicodeEncodeError:
                     raise VorbisEncodingError("invalid tag name %r" % tag)
@@ -136,7 +136,7 @@ class VComment(mutagen.Metadata, list):
         if isinstance(key, str):
             key = key.lower() 
             # we want be lax when appending & catch errors when validating
-        super().append((key, value))
+        list.append(self, (key, value))
 
     def clear(self):
         """Clear all keys from the comment."""
@@ -160,7 +160,7 @@ class VComment(mutagen.Metadata, list):
         f.write(self.vendor.encode('utf-8'))
         f.write(cdata.to_uint_le(len(self)))
         for tag, value in self:
-            comment = tag.encode() + b"=" + value.encode()
+            comment = tag.encode('UTF-8') + b"=" + value.encode('UTF-8')
             f.write(cdata.to_uint_le(len(comment)))
             f.write(comment)
         if framing: f.write(b"\x01")

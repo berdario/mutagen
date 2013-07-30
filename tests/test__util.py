@@ -1,4 +1,4 @@
-from mutagen._util import DictMixin, cdata, utf8, insert_bytes, delete_bytes
+from mutagen._util import DictMixin, cdata, utf8, insert_bytes, delete_bytes, byte_types
 from tests import TestCase, add
 import mmap
 import random
@@ -20,23 +20,23 @@ class Tutf8(TestCase):
     def test_str(self):
         value = utf8("1234")
         self.failUnlessEqual(value, b"1234")
-        self.failUnless(isinstance(value, bytes))
+        self.failUnless(isinstance(value, byte_types))
 
     def test_bad_str(self):
         value = utf8(b"\xab\xde")
         # Two '?' symbols.
         self.failUnlessEqual(value, b"\xef\xbf\xbd\xef\xbf\xbd")
-        self.failUnless(isinstance(value, bytes))
+        self.failUnless(isinstance(value, byte_types))
 
     def test_low_unicode(self):
         value = utf8("1234")
         self.failUnlessEqual(value, b"1234")
-        self.failUnless(isinstance(value, bytes))
+        self.failUnless(isinstance(value, byte_types))
 
     def test_high_unicode(self):
         value = utf8("\u1234")
         self.failUnlessEqual(value, b'\xe1\x88\xb4')
-        self.failUnless(isinstance(value, bytes))
+        self.failUnless(isinstance(value, byte_types))
 
     def test_invalid(self):
         self.failUnlessRaises(TypeError, utf8, 1234)

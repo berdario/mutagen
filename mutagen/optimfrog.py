@@ -22,8 +22,8 @@ For more information, see http://www.losslessaudio.org/
 
 __all__ = ["OptimFROG", "delete"]
 
-import struct
 from mutagen.apev2 import APEv2File, error, delete
+from mutagen._util import struct_unpack
 
 class OptimFROGHeaderError(error): pass
 
@@ -39,10 +39,10 @@ class OptimFROGInfo(object):
     def __init__(self, fileobj):
         header = fileobj.read(76)
         if (len(header) != 76 or not header.startswith(b"OFR ") or
-            struct.unpack("<I", header[4:8])[0] not in [12, 15]):
+            struct_unpack("<I", header[4:8])[0] not in [12, 15]):
             raise OptimFROGHeaderError("not an OptimFROG file")
         (total_samples, total_samples_high, sample_type, self.channels,
-         self.sample_rate) = struct.unpack("<IHBBI", header[8:20])
+         self.sample_rate) = struct_unpack("<IHBBI", header[8:20])
         total_samples += total_samples_high << 32
         self.channels += 1
         if self.sample_rate:

@@ -16,14 +16,14 @@ This implementation is based on the RFC 3533 standard found at
 http://www.xiph.org/ogg/doc/rfc3533.txt.
 """
 
-import struct
 import sys
 import zlib
 
+from struct import error as struct_error
 from io import BytesIO
 
 from mutagen import FileType
-from mutagen._util import cdata, insert_bytes, delete_bytes
+from mutagen._util import cdata, insert_bytes, delete_bytes, struct_pack, struct_unpack, reraise, buffer
 
 class error(IOError):
     """Ogg stream parsing errors."""
@@ -77,9 +77,9 @@ class OggPage(object):
 
         try:
             (oggs, self.version, self.__type_flags, self.position,
-             self.serial, self.sequence, crc, segments) = struct.unpack(
+             self.serial, self.sequence, crc, segments) = struct_unpack(
                 "<4sBBqIIiB", header)
-        except struct.error:
+        except struct_error:
             raise error("unable to read full header; got %r" % header)
 
         if oggs != b"OggS":
@@ -91,7 +91,7 @@ class OggPage(object):
 
         total = 0
         lacings = []
-        lacing_bytes = fileobj.read(segments)
+        lacing_bytes = bytearray(fileobj.read(segments))
         if len(lacing_bytes) != segments:
             raise error("unable to read %r lacing bytes" % segments)
         for c in lacing_bytes:
@@ -132,24 +132,24 @@ class OggPage(object):
         """
 
         data = [
-            struct.pack("<4sBBqIIi", b"OggS", self.version, self.__type_flags,
+            struct_pack("<4sBBqIIi", b"OggS", self.version, self.__type_flags,
                         self.position, self.serial, self.sequence, 0)
             ]
 
         lacing_data = []
         for datum in self.packets:
             quot, rem = divmod(len(datum), 255)
-            lacing_data.append(b"\xff" * quot + bytes([rem]))
-        lacing_data = b"".join(lacing_data)
+            lacing_data.append(b"\xff" * quot + bytearray([rem]))
+        lacing_data = bytearray().join(lacing_data)
         if not self.complete and lacing_data.endswith(b"\x00"):
             lacing_data = lacing_data[:-1]
-        data.append(bytes([len(lacing_data)]))
+        data.append(bytearray([len(lacing_data)]))
         data.append(lacing_data)
         data.extend(self.packets)
-        data = b"".join(data)
+        data = bytearray().join(data)
 
         # Python's CRC is swapped relative to Ogg's needs.
-        crc = zlib.crc32(data.translate(cdata.bitswap), -1)
+        crc = zlib.crc32(buffer(data.translate(cdata.bitswap)), -1) & 0xffffffff
         crc = ((crc & 0x80000000) <<1) - crc - 1
         # Although we're using to_int_be, this actually makes the CRC
         # a proper le integer, since Python's CRC is byteswapped.
@@ -351,7 +351,7 @@ class OggPage(object):
         if not new_pages[-1].complete and len(new_pages[-1].packets) == 1:
             new_pages[-1].position = -1
 
-        new_data = b"".join(map(klass.write, new_pages))
+        new_data = bytearray().join(map(klass.write, new_pages))
 
         # Make room in the file for the new data.
         delta = len(new_data)
@@ -458,7 +458,7 @@ class OggFileType(FileType):
                 self.info.length = samples / float(denom)
 
             except error as e:
-                raise self._Error(e).with_traceback(sys.exc_info()[2])
+                reraise(self._Error, e, sys.exc_info()[2])
             except EOFError:
                 raise self._Error("no appropriate stream found")
         finally:
@@ -477,7 +477,7 @@ class OggFileType(FileType):
         try:
             try: self.tags._inject(fileobj)
             except error as e:
-                raise self._Error(e).with_traceback(sys.exc_info()[2])
+                reraise(self._Error, e, sys.exc_info()[2])
             except EOFError:
                 raise self._Error("no appropriate stream found")
         finally:
@@ -494,7 +494,7 @@ class OggFileType(FileType):
         try:
             try: self.tags._inject(fileobj)
             except error as e:
-                raise self._Error(e).with_traceback(sys.exc_info()[2])
+                reraise(self._Error, e, sys.exc_info()[2])
             except EOFError:
                 raise self._Error("no appropriate stream found")
         finally:
