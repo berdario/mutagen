@@ -1,4 +1,5 @@
 
+from __future__ import print_function
 import shutil, os
 from tests import TestCase, add
 from mutagen.id3 import ID3, TIT2, ID3NoHeaderError

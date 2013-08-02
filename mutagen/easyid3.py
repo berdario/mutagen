@@ -16,7 +16,7 @@ more like Vorbis or APEv2 tags.
 import mutagen.id3
 
 from mutagen import Metadata
-from mutagen._util import DictMixin, dict_match
+from mutagen._util import DictMixin, dict_match, string_types
 from mutagen.id3 import ID3, error, delete, ID3FileType
 
 __all__ = ['EasyID3', 'Open', 'delete']
@@ -180,7 +180,7 @@ class EasyID3(DictMixin, Metadata):
 
     def __setitem__(self, key, value):
         key = key.lower()
-        if isinstance(value, str):
+        if isinstance(value, string_types):
             value = [value]
         func = dict_match(self.Set, key, self.SetFallback)
         if func is not None:

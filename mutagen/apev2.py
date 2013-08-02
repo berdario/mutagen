@@ -35,7 +35,7 @@ __all__ = ["APEv2", "APEv2File", "Open", "delete"]
 from io import BytesIO
 from functools import total_ordering
 
-from mutagen._util import struct_pack, utf8
+from mutagen._util import struct_pack, utf8, text_type
 
 def is_valid_apev2_key(key):
     key = utf8(key)
@@ -273,7 +273,7 @@ class APEv2(DictMixin, Metadata):
 
         if not isinstance(value, _APEValue):
             # let's guess at the content if we're not already a value...
-            if isinstance(value, str):
+            if isinstance(value, text_type):
                 # unicode? we've got to be text.
                 value = APEValue(utf8(value), TEXT)
             elif isinstance(value, list):
@@ -384,8 +384,8 @@ class _APEValue(object):
     # 1B: Null
     # Key value
     def _internal(self, key):
-        if isinstance(key, str):
-            key = key.encode()
+        if isinstance(key, text_type):
+            key = key.encode('utf-8')
         return struct_pack("<2I", len(self.value), self.kind << 1) + \
             key + b"\0" + self.value
 

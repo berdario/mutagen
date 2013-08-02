@@ -25,7 +25,7 @@ from io import BytesIO
 from functools import reduce
 from ._vorbis import VCommentDict
 from mutagen import FileType
-from mutagen._util import insert_bytes, struct_pack, struct_unpack, struct_calcsize
+from mutagen._util import insert_bytes, struct_pack, struct_unpack, struct_calcsize, text_type, byte_types
 from mutagen.id3 import BitPaddedInt
 
 class error(IOError): pass
@@ -51,8 +51,8 @@ class MetadataBlock(object):
         """Parse the given data string or file-like as a metadata block.
         The metadata header should not be included."""
         if data is not None:
-            if isinstance(data, str): data = BytesIO(data.encode())
-            elif isinstance(data, bytes): data = BytesIO(data)
+            if isinstance(data, text_type): data = BytesIO(data.encode('utf-8'))
+            elif isinstance(data, byte_types): data = BytesIO(data)
             elif not hasattr(data, 'read'):
                 raise TypeError(
                     "StreamInfo requires string data or a file-like")

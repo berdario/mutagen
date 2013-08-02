@@ -5,6 +5,8 @@
 # it under the terms of version 2 of the GNU General Public License as
 # published by the Free Software Foundation.
 
+from __future__ import division
+
 """True Audio audio stream information and tags.
 
 True Audio is a lossless format designed for real-time encoding and

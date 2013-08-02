@@ -1,5 +1,5 @@
 from mutagen import Metadata
-from mutagen._util import DictMixin, dict_match, utf8
+from mutagen._util import DictMixin, dict_match, utf8, string_types
 from mutagen.mp4 import MP4, MP4Tags, error, delete
 
 __all__ = ["EasyMP4Tags", "EasyMP4", "delete", "error"]
@@ -159,7 +159,7 @@ class EasyMP4Tags(DictMixin, Metadata):
 
     def __setitem__(self, key, value):
         key = key.lower()
-        if isinstance(value, str):
+        if isinstance(value, string_types):
             value = [value]
         func = dict_match(self.Set, key)
         if func is not None:

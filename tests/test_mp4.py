@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import shutil
 
@@ -169,7 +170,7 @@ class TMP4Tags(TestCase):
              b"\x00\x00\x00*purl\x00\x00\x00\"data\x00\x00\x00\x00\x00\x00"
              b"\x00\x00http://foo/bar.xml")
         self.failUnlessEqual(
-             MP4Tags()._MP4Tags__render_text('aART', ['\u0041lbum Artist']),
+             MP4Tags()._MP4Tags__render_text('aART', [u'\u0041lbum Artist']),
              b"\x00\x00\x00$aART\x00\x00\x00\x1cdata\x00\x00\x00\x01\x00\x00"
              b"\x00\x00\x41lbum Artist")
         self.failUnlessEqual(
@@ -310,7 +311,7 @@ class TMP4(TestCase):
 
     def test_unicode(self):
         self.set_key(b'\xa9nam', [b'\xe3\x82\x8a\xe3\x81\x8b'],
-                     result=['\u308a\u304b'])
+                     result=[u'\u308a\u304b'])
 
     def test_save_text(self):
         self.set_key(b'\xa9nam', ["Some test name"])

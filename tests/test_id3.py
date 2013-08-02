@@ -3,7 +3,7 @@ import shutil
 from unittest import TestCase
 from tests import add
 from mutagen.id3 import ID3, BitPaddedInt, COMR, Frames, Frames_2_2, ID3Warning, ID3JunkFrameError
-from mutagen._util import type, byte_types
+from mutagen._util import type, byte_types, text_type
 from io import BytesIO
 import warnings
 warnings.simplefilter('error', ID3Warning)
@@ -165,12 +165,12 @@ class ID3Loading(TestCase):
         id3._ID3__flags = 0x80
         badsync = b'\x00\xff\x00ab\x00'
         self.assertEquals(
-            id3._ID3__load_framedata(Frames["TPE2"], 0, badsync), ["\xffab"])
+            id3._ID3__load_framedata(Frames["TPE2"], 0, badsync), [u"\xffab"])
         id3._ID3__flags = 0x00
         self.assertEquals(id3._ID3__load_framedata(
-            Frames["TPE2"], 0x02, badsync), ["\xffab"])
+            Frames["TPE2"], 0x02, badsync), [u"\xffab"])
         tag = id3._ID3__load_framedata(Frames["TPE2"], 0, badsync)
-        self.assertEquals(tag, ["\xff", "ab"])
+        self.assertEquals(tag, [u"\xff", u"ab"])
 
     def test_insane__ID3__fullread(self):
         id3 = ID3()
@@ -315,9 +315,9 @@ class ID3v1Tags(TestCase):
 
     def test_nulls(self):
         from mutagen.id3 import ParseID3v1
-        s = 'TAG%(title)30s%(artist)30s%(album)30s%(year)4s%(cmt)29s\x03\x01'
-        s = s % dict(artist='abcd\00fg', title='hijklmn\x00p',
-                    album='qrst\x00v', cmt='wxyz', year='1224')
+        s = u'TAG%(title)30s%(artist)30s%(album)30s%(year)4s%(cmt)29s\x03\x01'
+        s = s % dict(artist=u'abcd\00fg', title=u'hijklmn\x00p',
+                    album=u'qrst\x00v', cmt='wxyz', year='1224')
         tags = ParseID3v1(s.encode("raw_unicode_escape"))
         self.assertEquals(b'abcd'.decode('latin1'), tags['TPE1'])
         self.assertEquals(b'hijklmn'.decode('latin1'), tags['TIT2'])
@@ -325,9 +325,9 @@ class ID3v1Tags(TestCase):
 
     def test_nonascii(self):
         from mutagen.id3 import ParseID3v1
-        s = 'TAG%(title)30s%(artist)30s%(album)30s%(year)4s%(cmt)29s\x03\x01'
-        s = s % dict(artist='abcd\xe9fg', title='hijklmn\xf3p',
-                    album='qrst\xfcv', cmt='wxyz', year='1234')
+        s = u'TAG%(title)30s%(artist)30s%(album)30s%(year)4s%(cmt)29s\x03\x01'
+        s = s % dict(artist=u'abcd\xe9fg', title=u'hijklmn\xf3p',
+                    album=u'qrst\xfcv', cmt='wxyz', year='1234')
         tags = ParseID3v1(s.encode("raw_unicode_escape"))
         self.assertEquals(b'abcd\xe9fg'.decode('latin1'), tags['TPE1'])
         self.assertEquals(b'hijklmn\xf3p'.decode('latin1'), tags['TIT2'])
@@ -457,7 +457,7 @@ def TestReadTags():
     ['TIPL', b'\x02\x00a\x00\x00\x00b', [["a", "b"]], '', dict(encoding=2)],
     ['TIT1', b'\x00a/b', 'a/b', '', dict(encoding=0)],
     # TIT2 checks misaligned terminator b'\x00\x00' across crosses utf16 chars
-    ['TIT2', b'\x01\xff\xfe\x38\x00\x00\x38', '8\u3800', '', dict(encoding=1)],
+    ['TIT2', b'\x01\xff\xfe\x38\x00\x00\x38', u'8\u3800', '', dict(encoding=1)],
     ['TIT3', b'\x00a/b', 'a/b', '', dict(encoding=0)],
     ['TKEY', b'\x00A#m', 'A#m', '', dict(encoding=0)],
     ['TLAN', b'\x006241', '6241', '', dict(encoding=0)],
@@ -742,7 +742,7 @@ def TestReadTags():
             tag = TAG.fromData(_23, 0, data)
             self.failUnless(tag.HashKey)
             self.failUnless(tag.pprint())
-            if isinstance(value, str) and not isinstance(tag, id3.TextFrame):
+            if isinstance(value, text_type) and not isinstance(tag, id3.TextFrame):
                 value = value.encode('utf-8')
             self.assertEquals(value, tag)
             if 'encoding' not in info:
@@ -756,13 +756,13 @@ def TestReadTags():
                     if isinstance(value, float):
                         self.failUnlessAlmostEqual(value, getattr(t, attr), 5)
                     else:
-                        if isinstance(value, str) and isinstance(getattr(t, attr), byte_types):
+                        if isinstance(value, text_type) and isinstance(getattr(t, attr), byte_types):
                             # FIXME: since we're directly loading the data
                             # inside the tag objects, the easiest way is to
                             # store it and return it as bytes, but here it
                             # means that we have to encode each time
                             # before comparing
-                            value = value.encode()
+                            value = value.encode('utf-8')
                         self.assertEquals(value, getattr(t, attr))
 
                     if isinstance(intval, int):
@@ -896,7 +896,7 @@ class SpecSanityChecks(TestCase):
         s = ByteSpec('name')
         self.assertEquals((97, b'bcdefg'), s.read(None, bytearray(b'abcdefg')))
         self.assertEquals(b'a', s.write(None, 97))
-        self.assertRaises(TypeError, s.write, None, 'abc')
+        self.assertRaises((TypeError, ValueError), s.write, None, 'abc')
         self.assertRaises(TypeError, s.write, None, None)
 
     def test_encodingspec(self):
@@ -905,7 +905,7 @@ class SpecSanityChecks(TestCase):
         self.assertEquals((0, b'abcdefg'), s.read(None, bytearray(b'abcdefg')))
         self.assertEquals((3, b'abcdefg'), s.read(None, bytearray(b'\x03abcdefg')))
         self.assertEquals(b'\x00', s.write(None, 0))
-        self.assertRaises(TypeError, s.write, None, 'abc')
+        self.assertRaises((TypeError, ValueError), s.write, None, 'abc')
         self.assertRaises(TypeError, s.write, None, None)
 
     def test_stringspec(self):

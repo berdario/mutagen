@@ -158,7 +158,7 @@ class TAPEv2(TestCase):
 
     def test_invalid_key(self):
         self.failUnlessRaises(
-            KeyError, self.audio.__setitem__, "\u1234", "foo")
+            KeyError, self.audio.__setitem__, u"\u1234", "foo")
 
     def test_guess_text(self):
         from mutagen.apev2 import APETextValue

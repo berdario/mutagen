@@ -34,7 +34,7 @@ class Tutf8(TestCase):
         self.failUnless(isinstance(value, byte_types))
 
     def test_high_unicode(self):
-        value = utf8("\u1234")
+        value = utf8(u"\u1234")
         self.failUnlessEqual(value, b'\xe1\x88\xb4')
         self.failUnless(isinstance(value, byte_types))
 

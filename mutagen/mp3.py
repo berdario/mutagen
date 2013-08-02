@@ -5,6 +5,8 @@
 # it under the terms of version 2 of the GNU General Public License as
 # published by the Free Software Foundation.
 
+from __future__ import division
+
 """MPEG audio stream information and tags."""
 
 import os

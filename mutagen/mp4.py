@@ -24,7 +24,7 @@ import sys
 
 from mutagen import FileType, Metadata
 from mutagen._constants import GENRES
-from mutagen._util import cdata, insert_bytes, DictProxy, utf8, text_type, struct_pack, struct_unpack, struct_calcsize, reraise
+from mutagen._util import cdata, insert_bytes, DictProxy, utf8, text_type, string_types, byte_types, struct_pack, struct_unpack, struct_calcsize, reraise
 
 class error(IOError): pass
 class MP4MetadataError(error): pass
@@ -169,7 +169,7 @@ class Atoms(object):
         'names' may be a list of atoms ([b'moov', b'udta']) or a string
         specifying the complete path ('moov.udta').
         """
-        if isinstance(names, str):
+        if isinstance(names, string_types):
             names = names.split(".")
         for child in self.atoms:
             if child.name == names[0].encode():
@@ -438,12 +438,12 @@ class MP4Tags(DictProxy, Metadata):
         if value:
             self[atom.name + b":" + mean + b":" + name] = value
     def __render_freeform(self, key, value):
-        if isinstance(key, str):
+        if isinstance(key, text_type):
             key = key.encode()
         dummy, mean, name = key.split(b":", 2)
         mean = struct_pack(">I4sI", len(mean) + 12, b"mean", 0) + mean
         name = struct_pack(">I4sI", len(name) + 12, b"name", 0) + name
-        if isinstance(value, bytes):
+        if isinstance(value, byte_types):
             value = [value]
         return Atom.render(b"----", mean + name + bytearray().join([
             struct_pack(">I4s2I", len(data) + 16, b"data", 1, 0) + data
@@ -536,7 +536,7 @@ class MP4Tags(DictProxy, Metadata):
         if value:
             self[atom.name] = value
     def __render_text(self, key, value, flags=1):
-        if isinstance(value, str):
+        if isinstance(value, text_type):
             value = [value]
         return self.__render_data(
             key, flags, list(map(utf8, value)))
@@ -563,7 +563,7 @@ class MP4Tags(DictProxy, Metadata):
     def pprint(self):
         values = []
         for key, value in self.items():
-            if isinstance(key, bytes):
+            if isinstance(key, byte_types):
                 key = key.decode('latin1')
             if key == b"covr":
                 values.append("%s=%s" % (key, ", ".join(

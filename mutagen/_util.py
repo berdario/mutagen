@@ -22,7 +22,6 @@ from fnmatch import fnmatchcase
 PY2 = sys.version_info[0] == 2
 
 if PY2:
-    native_str = str
     text_type = unicode
     string_types = (unicode, str)
     byte_types = (str, bytearray)
@@ -33,7 +32,6 @@ if PY2:
     def zlib_decompress(string, *args, **kwargs):
         return bytearray(decompress(str(string), *args, **kwargs))
 else:
-    native_str = str
     text_type = str
     string_types = (str, )
     byte_types = (bytes, bytearray)

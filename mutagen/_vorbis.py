@@ -19,7 +19,7 @@ import sys
 from io import BytesIO
 
 import mutagen
-from mutagen._util import DictMixin, cdata, reraise
+from mutagen._util import DictMixin, cdata, reraise, text_type, string_types, byte_types
 
 def is_valid_key(key):
     """Return true if a string is a valid Vorbis comment key.
@@ -27,7 +27,7 @@ def is_valid_key(key):
     Valid Vorbis comment keys are printable ASCII between 0x20 (space)
     and 0x7D ('}'), excluding '='.
     """
-    if isinstance(key, str):
+    if isinstance(key, text_type):
         try:
             key = key.encode('ascii')
         except UnicodeEncodeError:
@@ -62,9 +62,9 @@ class VComment(mutagen.Metadata, list):
         # override just load and get equivalent magic for the
         # constructor.
         if data is not None:
-            if isinstance(data, str):
-                data = BytesIO(data.encode())
-            elif isinstance(data, bytes):
+            if isinstance(data, text_type):
+                data = BytesIO(data.encode('utf-8'))
+            elif isinstance(data, byte_types):
                 data = BytesIO(data)
             elif not hasattr(data, 'read'):
                 raise TypeError("VComment requires string data or a file-like")
@@ -118,7 +118,7 @@ class VComment(mutagen.Metadata, list):
         any invalid keys or values are found, a ValueError is raised.
         """
 
-        if not isinstance(self.vendor, str):
+        if not isinstance(self.vendor, text_type):
             try: self.vendor.decode('utf-8')
             except UnicodeDecodeError: raise ValueError
 
@@ -126,14 +126,14 @@ class VComment(mutagen.Metadata, list):
             try:
                 if not is_valid_key(key): raise ValueError
             except: raise ValueError("%r is not a valid key" % key)
-            if not isinstance(value, str):
+            if not isinstance(value, text_type):
                 try: value.encode("utf-8")
                 except: raise ValueError("%r is not a valid value" % value)
         else: return True
 
     def append(self, tup):
         key, value = tup
-        if isinstance(key, str):
+        if isinstance(key, string_types):
             key = key.lower() 
             # we want be lax when appending & catch errors when validating
         list.append(self, (key, value))

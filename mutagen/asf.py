@@ -13,8 +13,7 @@ __all__ = ["ASF", "Open"]
 
 from functools import total_ordering
 from mutagen import FileType, Metadata
-from mutagen._util import insert_bytes, delete_bytes, DictMixin, struct_pack, struct_unpack
-
+from mutagen._util import insert_bytes, delete_bytes, DictMixin, struct_pack, struct_unpack, text_type, string_types
 class error(IOError): pass
 class ASFError(error): pass
 class ASFHeaderError(error): pass
@@ -78,21 +77,19 @@ class ASFTags(list, DictMixin, Metadata):
         except KeyError: pass
         for value in values:
             if key in _standard_attribute_names:
-                value = str(value)
+                value = text_type(value)
             elif not isinstance(value, ASFBaseAttribute):
-                if isinstance(value, str):
+                if isinstance(value, string_types):
                     value = ASFUnicodeAttribute(value)
                 elif isinstance(value, bool):
                     value = ASFBoolAttribute(value)
-                elif isinstance(value, int):
-                    value = ASFDWordAttribute(value)
                 elif isinstance(value, int):
                     value = ASFQWordAttribute(value)
             self.append((key, value))
 
     def keys(self):
         """Return all keys in the comment."""
-        return self and set(next(zip(*self)))
+        return self and set(next(iter(zip(*self))))
 
     def as_dict(self):
         """Return a copy of the comment data in a real dict."""

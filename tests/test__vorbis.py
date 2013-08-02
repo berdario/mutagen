@@ -198,11 +198,11 @@ class TVCommentDict(TestCase):
         self.failUnlessEqual(d["title"], self.c["title"])
 
     def test_bad_key(self):
-        self.failUnlessRaises(UnicodeError, self.c.get, "\u1234")
+        self.failUnlessRaises(UnicodeError, self.c.get, u"\u1234")
         self.failUnlessRaises(
-            UnicodeError, self.c.__setitem__, "\u1234", "foo")
+            UnicodeError, self.c.__setitem__, u"\u1234", "foo")
         self.failUnlessRaises(
-            UnicodeError, self.c.__delitem__, "\u1234")
+            UnicodeError, self.c.__delitem__, u"\u1234")
 
     def test_duplicate_keys(self):
         self.c = VCommentDict()

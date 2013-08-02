@@ -29,7 +29,7 @@ from struct import error as struct_error
 
 from mutagen import FileType, Metadata
 from mutagen._constants import GENRES
-from mutagen._util import cdata, insert_bytes, delete_bytes, DictProxy, struct_pack, struct_unpack, struct_calcsize, native_str
+from mutagen._util import cdata, insert_bytes, delete_bytes, DictProxy, struct_pack, struct_unpack, struct_calcsize, text_type, string_types
 
 class error(IOError): pass
 class M4AMetadataError(error): pass
@@ -100,7 +100,7 @@ class Atom(object):
         """Render raw atom data."""
         # this raises OverflowError if Py_ssize_t can't handle the atom data
         size = len(data) + 8
-        if isinstance(name, str):
+        if isinstance(name, text_type):
             name = name.encode()
         if size <= 0xFFFFFFFF:
             return struct_pack(">I4s", size, name) + data
@@ -168,7 +168,7 @@ class Atoms(object):
         'names' may be a list of atoms (['moov', 'udta']) or a string
         specifying the complete path ('moov.udta').
         """
-        if isinstance(names, str):
+        if isinstance(names, string_types):
             names = names.split(".")
         for child in self.atoms:
             if child.name == names[0].encode():
@@ -225,7 +225,7 @@ class M4ATags(DictProxy, Metadata):
         # If there's no key-based way to distinguish, order by length.
         # If there's still no way, go by string comparison on the
         # values, so we at least have something determinstic.
-        return (order.get(key[:4], last), len(native_str(v)), native_str(v))
+        return (order.get(key[:4], last), len(str(v)), str(v))
     __key_sort = staticmethod(__key_sort)
 
     def save(self, filename):
@@ -329,8 +329,8 @@ class M4ATags(DictProxy, Metadata):
         else:
             self[atom.name + b":" + mean + b":" + name] = value
     def __render_freeform(self, key, value):
-        if isinstance(value, str):
-            value = value.encode()
+        if isinstance(value, text_type):
+            value = value.encode('utf-8')
         dummy, mean, name = key.split(b":", 2)
         mean = struct_pack(">I4sI", len(mean) + 12, b"mean", 0) + mean
         name = struct_pack(">I4sI", len(name) + 12, b"name", 0) + name
@@ -388,8 +388,8 @@ class M4ATags(DictProxy, Metadata):
     def __render_cover(self, key, value):
         try: imageformat = value.imageformat
         except AttributeError: imageformat = M4ACover.FORMAT_JPEG
-        if isinstance(value, str):
-            value = value.encode()
+        if isinstance(value, text_type):
+            value = value.encode('utf-8')
         data = Atom.render("data", struct_pack(">2I", imageformat, 0) + value)
         return Atom.render(key, data)
 

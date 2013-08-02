@@ -33,6 +33,7 @@ __all__ = ['ID3', 'ID3FileType', 'Frames', 'Open', 'delete']
 from struct import error as StructError
 from zlib import error as zlibError
 from functools import total_ordering
+from itertools import takewhile
 from warnings import warn
 
 import mutagen
@@ -455,7 +456,7 @@ class ID3(DictProxy, mutagen.Metadata):
     def __save_frame(self, frame):
         flags = 0
         if self.PEDANTIC and isinstance(frame, TextFrame):
-            if len(str(frame)) == 0: return ''
+            if len(text_type(frame)) == 0: return ''
         framedata = frame._writeData()
         usize = len(framedata)
         if usize > 2048:
@@ -482,13 +483,13 @@ class ID3(DictProxy, mutagen.Metadata):
 
         # TDAT, TYER, and TIME have been turned into TDRC.
         try:
-            if str(self.get("TYER", "")).strip("\x00"):
-                date = str(self.pop("TYER"))
-                if str(self.get("TDAT", "")).strip("\x00"):
-                    dat = str(self.pop("TDAT"))
+            if text_type(self.get("TYER", "")).strip("\x00"):
+                date = text_type(self.pop("TYER"))
+                if text_type(self.get("TDAT", "")).strip("\x00"):
+                    dat = text_type(self.pop("TDAT"))
                     date = "%s-%s-%s" % (date, dat[2:], dat[:2])
-                    if str(self.get("TIME", "")).strip("\x00"):
-                        time = str(self.pop("TIME"))
+                    if text_type(self.get("TIME", "")).strip("\x00"):
+                        time = text_type(self.pop("TIME"))
                         date += "T%s:%s:00" % (time[:2], time[2:])
                 if "TDRC" not in self:
                     self.add(TDRC(encoding=0, text=date))
@@ -705,8 +706,8 @@ class StringSpec(Spec):
 class BinaryDataSpec(Spec):
     def read(self, frame, data): return data, b''
     def write(self, frame, value):
-        if isinstance(value, str):
-            return value.encode()
+        if isinstance(value, text_type):
+            return value.encode('utf-8')
         else:
             return value
     def validate(self, frame, value): return value
@@ -739,8 +740,7 @@ class EncodedTextSpec(Spec):
     def write(self, frame, value):
         enc, term = self._encodings[frame.encoding]
         return value.encode(enc) + term
-
-    def validate(self, frame, value): return str(value)
+    def validate(self, frame, value): return text_type(value)
 
 class MultiSpec(Spec):
     def __init__(self, name, *specs, **kw):
@@ -772,7 +772,7 @@ class MultiSpec(Spec):
 
     def validate(self, frame, value):
         if value is None: return []
-        if self.sep and isinstance(value, str):
+        if self.sep and isinstance(value, string_types):
             value = value.split(self.sep)
         if isinstance(value, list):
             if len(self.specs) == 1:
@@ -820,7 +820,7 @@ class ID3TimeStamp(object):
         parts = [self.year, self.month, self.day,
                 self.hour, self.minute, self.second]
         pieces = []
-        for i, part in enumerate(iter(iter(parts).__next__, None)):
+        for i, part in enumerate(takewhile(lambda x: x is not None, parts)):
             pieces.append(self.__formats[i]%part + self.__seps[i])
         return ''.join(pieces)[:-1]
 
@@ -1186,7 +1186,8 @@ class TextFrame(Frame):
         MultiSpec('text', EncodedTextSpec('text'), sep=u'\u0000') ]
     def __str__(self): return '\u0000'.join(self.text)
     def __eq__(self, other):
-        if isinstance(other, str): return str(self) == other
+        if isinstance(other, text_type): return text_type(self) == other
+        elif isinstance(other, str): return str(self) == other
         return self.text == other
     __hash__ = Frame.__hash__
     def __getitem__(self, item): return self.text[item]
@@ -1280,9 +1281,9 @@ class TCON(TextFrame):
         for value in self.text:
             if value.isdigit():
                 try: genres.append(self.GENRES[int(value)])
-                except IndexError: genres.append("Unknown")
-            elif value == "CR": genres.append("Cover")
-            elif value == "RX": genres.append("Remix")
+                except IndexError: genres.append(u"Unknown")
+            elif value == "CR": genres.append(u"Cover")
+            elif value == "RX": genres.append(u"Remix")
             elif value:
                 newgenres = []
                 genreid, dummy, genrename = genre_re.match(value).groups()
@@ -1290,11 +1291,11 @@ class TCON(TextFrame):
                 if genreid:
                     for gid in genreid[1:-1].split(")("):
                         if gid.isdigit() and int(gid) < len(self.GENRES):
-                            gid = str(self.GENRES[int(gid)])
+                            gid = text_type(self.GENRES[int(gid)])
                             newgenres.append(gid)
-                        elif gid == "CR": newgenres.append("Cover")
-                        elif gid == "RX": newgenres.append("Remix")
-                        else: newgenres.append("Unknown")
+                        elif gid == "CR": newgenres.append(u"Cover")
+                        elif gid == "RX": newgenres.append(u"Remix")
+                        else: newgenres.append(u"Unknown")
 
                 if genrename:
                     # "Unescaping" the first parenthesis
@@ -1306,11 +1307,11 @@ class TCON(TextFrame):
         return genres
 
     def __set_genres(self, genres):
-        if isinstance(genres, str): genres = [genres]
+        if isinstance(genres, text_type): genres = [genres]
         self.text = list(map(self.__decode, genres))
 
     def __decode(self, value):
-        if isinstance(value, bytes):
+        if isinstance(value, byte_types):
             enc = EncodedTextSpec._encodings[self.encoding][0]
             return value.decode(enc)
         else: return value
