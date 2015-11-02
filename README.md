@@ -1,3 +1,6 @@
+**This is only my porting effort from 2012/2013, please refer to https://bitbucket.org/lazka/mutagen/ for the currently developed library**
+--------------------------
+
 Mutagen is a Python module to handle audio metadata. It supports ASF,
 FLAC, M4A, Monkey's Audio, MP3, Musepack, Ogg FLAC, Ogg Speex, Ogg
 Theora, Ogg Vorbis, True Audio, WavPack and OptimFROG audio files. All
